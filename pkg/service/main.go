@@ -582,7 +582,7 @@ func main() {
 	// ==========
 	// IN PROGRESS
 	// ==========
-	router.GET("/activity/", GetUserActivity) // using redis
+	router.GET("/activity", GetUserActivity) // using redis
 	// ==========
 	// TO DO
 	// ==========
