@@ -1,4 +1,4 @@
-package main
+package books
 
 import (
 	"context"
@@ -15,137 +15,49 @@ import (
 	"strings"
 )
 
-type store struct {
-	Books   int `json:"books"`
-	Authors int `json:"authors"`
-}
-
-type GetBooksRequest struct {
-	Title      string  `form:"title"`
-	AuthorName string  `form:"author_name"`
-	MinPrice   float64 `form:"min_price" validate:"gte=0"`
-	MaxPrice   float64 `form:"max_price" validate:"gte=0"`
-	Username   string  `form:"username" binding:"required"`
-}
-
-type GetBookRequest struct {
-	Id       string `form:"id" binding:"required"`
-	Username string `form:"username" binding:"required"`
-}
-
-type GetBookResponse struct {
-	Found  bool     `json:"found"`
-	Source BookRead `json:"_source"`
-}
-
-type CreateBookRequest struct {
-	Title          string  `json:"title" binding:"required"`
-	AuthorName     string  `json:"author_name" binding:"required"`
-	Price          float64 `json:"price" binding:"required"`
-	EbookAvailable bool    `json:"ebook_available" binding:"required"`
-	PublishDate    string  `json:"publish_date" binding:"required"`
-	Username       string  `json:"username" binding:"required"`
-}
-
-type CreateBookResponse struct {
-	Result string                 `json:"result,omitempty"`
-	Error  map[string]interface{} `json:"error,omitempty"`
-	Status int                    `json:"status,omitempty"`
-}
-
-type CreateBookObject struct {
-	Id             string  `json:"id"`
-	Title          string  `json:"title"`
-	AuthorName     string  `json:"author_name"`
-	Price          float64 `json:"price"`
-	EbookAvailable bool    `json:"ebook_available"`
-	PublishDate    string  `json:"publish_date"`
-	Username       string  `json:"username"`
-}
-
-type UpdateBookRequest struct {
-	Id       string `json:"id" binding:"required"`
-	Title    string `json:"title" binding:"required"`
-	Username string `json:"username" binding:"required"`
-}
-
-type UpdateBookResponse struct {
-	Result string                 `json:"result,omitempty"`
-	Error  map[string]interface{} `json:"error,omitempty"`
-	Status int                    `json:"status,omitempty"`
-}
-
-type DeleteBookRequest struct {
-	Id       string `form:"id" binding:"required"`
-	Username string `form:"username" binding:"required"`
-}
-
-type DeleteBookResponse struct {
-	Result string `json:"result"`
-}
-
-type GetStoreInventoryRequest struct {
-	Username string `form:"username" binding:"required"`
-}
-
-type GetBooksResponse struct {
-	Hits Hits `json:"hits"`
-}
-
-type Hits struct {
-	Hits []BookHit `json:"hits"`
-}
-
-type BookHit struct {
-	Source BookRead `json:"_source"`
-}
-
-type BookRead struct {
-	Title          string  `json:"title"`
-	AuthorName     string  `json:"author_name"`
-	Price          float64 `json:"price"`
-	EbookAvailable bool    `json:"ebook_available"`
-	PublishDate    string  `json:"publish_date"`
-}
-
 // const IndexName = "books_shahar_with_synonym"
 const IndexName = "books_shahar"
 
 // GetBooks GET /search
 func GetBooks(c *gin.Context) {
-	var bookReq GetBooksRequest
+	var req GetBooksRequest
 
-	if err := c.ShouldBindQuery(&bookReq); err != nil {
+	if err := c.ShouldBindQuery(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"bind error": err.Error()})
 		return
 	}
 
 	validate := validator.New()
-	if err := validate.Struct(bookReq); err != nil {
+	if err := validate.Struct(req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"validation error": err.Error()})
 		return
 	}
 
-	if (bookReq.MinPrice > 0 && bookReq.MaxPrice == 0) || (bookReq.MinPrice == 0 && bookReq.MaxPrice > 0) {
+	if (req.MinPrice > 0 && req.MaxPrice == 0) || (req.MinPrice == 0 && req.MaxPrice > 0) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "both min_price and max_price must be provided"})
 		return
 	}
 
-	if bookReq.MinPrice > 0 && bookReq.MaxPrice > 0 && bookReq.MinPrice > bookReq.MaxPrice {
+	if req.MinPrice > 0 && req.MaxPrice > 0 && req.MinPrice > req.MaxPrice {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "min_price must be less than or equal to max_price"})
 		return
 	}
 
-	query := buildBooksQuery(bookReq)
+	saveUserActivity(req.Username, "GET", "/search")
+
+	query := buildBooksQuery(req)
+
 	books, err := fetchBooks(query)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
 	booksRead := make([]BookRead, 0)
 	for _, b := range *books {
 		booksRead = append(booksRead, b.Source)
 	}
+
 	c.IndentedJSON(http.StatusOK, booksRead)
 }
 
@@ -198,6 +110,8 @@ func GetBook(c *gin.Context) {
 		return
 	}
 
+	saveUserActivity(req.Username, "GET", "/books")
+
 	// refactor later
 	bookId := req.Id
 	book, err := fetchBookById(bookId)
@@ -205,6 +119,7 @@ func GetBook(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
 	c.IndentedJSON(http.StatusOK, book)
 }
 
@@ -241,26 +156,27 @@ func fetchBookById(bookId string) (*BookRead, error) {
 
 // CreateBook POST /books
 func CreateBook(c *gin.Context) {
-	var reqData CreateBookRequest
+	var req CreateBookRequest
 
-	if err := c.ShouldBindJSON(&reqData); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
+	saveUserActivity(req.Username, "POST", "/books")
+
 	bookId := uuid.NewString()
-	res, err := createNewBook(&reqData, bookId)
+	res, err := createNewBook(&req, bookId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
 	if res.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "error creating book"})
 		return
 	}
 
-	requestJSON, err := json.Marshal(reqData)
+	requestJSON, err := json.Marshal(req)
 	if err != nil {
 		fmt.Printf("Error marshaling JSON: %v\n", err)
 		c.IndentedJSON(http.StatusCreated, gin.H{"message": "book created successfully"})
@@ -276,6 +192,7 @@ func CreateBook(c *gin.Context) {
 	}
 
 	book.Id = bookId
+
 	c.IndentedJSON(http.StatusCreated, book)
 }
 
@@ -357,6 +274,8 @@ func UpdateBookTitle(c *gin.Context) {
 		return
 	}
 
+	saveUserActivity(req.Username, "PUT", "/books")
+
 	c.IndentedJSON(http.StatusOK, gin.H{"message": "book updated successfully"})
 }
 
@@ -429,6 +348,8 @@ func DeleteBook(c *gin.Context) {
 		return
 	}
 
+	saveUserActivity(req.Username, "DELETE", "/books")
+
 	// consider switching to switch case
 	if res == "not_found" {
 		c.JSON(http.StatusNotFound, gin.H{"error": "book not found"})
@@ -467,19 +388,19 @@ func deleteBookById(bookId string) (string, error) {
 	return resData.Result, nil
 }
 
-// GetStoreInventory GET /store
-func GetStoreInventory(c *gin.Context) {
-	var storeReq GetStoreInventoryRequest
+// GetInventory GET /store
+func GetInventory(c *gin.Context) {
+	var req GetStoreInventoryRequest
 
-	if err := c.ShouldBindQuery(&storeReq); err != nil {
+	if err := c.ShouldBindQuery(&req); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 
-	//username := storeReq.Username
+	//username := req.Username
 	//fmt.Println("Getting store inventory. Activity for user: " + username)
 
-	query := buildStoreInventoryQuery()
+	query := buildInventoryQuery()
 	books, err := fetchBooks(query)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -492,10 +413,12 @@ func GetStoreInventory(c *gin.Context) {
 		uniqueAuthors[b.Source.AuthorName] = struct{}{}
 	}
 
+	saveUserActivity(req.Username, "GET", "/store")
+
 	c.IndentedJSON(http.StatusOK, store{Books: len(*books), Authors: len(uniqueAuthors)})
 }
 
-func buildStoreInventoryQuery() map[string]interface{} {
+func buildInventoryQuery() map[string]interface{} {
 	return map[string]interface{}{
 		"size":    1000,
 		"_source": "author_name",
@@ -545,18 +468,55 @@ func createSearchBooksRequest(query map[string]interface{}) (*esapi.SearchReques
 
 // GetUserActivity GET /activity/:username
 func GetUserActivity(c *gin.Context) {
-	username := getUsernameQueryParam(c)
-	c.JSON(200, gin.H{
-		"message": fmt.Sprint("Getting user activity for " + username),
-	})
+	var req UserActivityRequest
+
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	actions, err := fetchUserActivity(req.Username)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, actions)
 }
 
 func connectToElasticsearch() (*elasticsearch.Client, error) {
-	es, err := elasticsearch.NewDefaultClient()
+	return elasticsearch.NewDefaultClient()
+	//if err != nil {
+	//	return nil, err
+	//}
+	//return es, nil
+}
+
+func saveUserActivity(username string, method string, route string) {
+	r := newCache(MaxActions)
+	client, err := connectToRedis()
 	if err != nil {
+		log.Fatal(err)
+		return
+	}
+	if err = r.SetUserActivity(client, username, method+" "+route); err != nil {
+		if err != nil {
+			log.Fatalf("Error saving user activity: %v", err)
+			// TODO should I fail the response?
+			//c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			//return
+		}
+	}
+}
+
+func fetchUserActivity(username string) ([]string, error) {
+	r := newCache(MaxActions)
+	client, err := connectToRedis()
+	if err != nil {
+		log.Fatal(err)
 		return nil, err
 	}
-	return es, nil
+	return r.GetUserActivity(client, username)
 }
 
 // Remove
@@ -565,29 +525,6 @@ func connectToElasticsearch() (*elasticsearch.Client, error) {
 //}
 
 // Remove
-func getUsernameQueryParam(c *gin.Context) string {
-	return c.Query("username")
-}
-
-func main() {
-	router := gin.New()
-	// Done
-	// ==========
-	router.GET("/search", GetBooks)
-	router.GET("/books", GetBook)
-	router.POST("/books", CreateBook)
-	router.PUT("/books", UpdateBookTitle)
-	router.DELETE("/books", DeleteBook)
-	router.GET("/store", GetStoreInventory)
-	// ==========
-	// IN PROGRESS
-	// ==========
-	router.GET("/activity", GetUserActivity) // using redis
-	// ==========
-	// TO DO
-	// ==========
-	// REFACTOR (rearrange to packages)
-	// ==========
-
-	router.Run(":8080")
-}
+//func getUsernameQueryParam(c *gin.Context) string {
+//	return c.Query("username")
+//}
