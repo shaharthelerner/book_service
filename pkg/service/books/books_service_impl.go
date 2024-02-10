@@ -42,8 +42,9 @@ func (bs *BooksServiceImpl) GetBooks(req request.GetBooksRequest) (*response.Get
 	if err := bs.Validate.Struct(req); err != nil {
 		return nil, err
 	}
+
 	if (req.MinPrice > 0 && req.MaxPrice == 0) || (req.MinPrice == 0 && req.MaxPrice > 0) {
-		return nil, errors.New("both min_price and max_price must be provided")
+		return nil, errors.New("either both min_price and max_price must be provided or none of them")
 	}
 	if req.MinPrice > 0 && req.MaxPrice > 0 && req.MinPrice > req.MaxPrice {
 		return nil, errors.New("min_price must be less than or equal to max_price")

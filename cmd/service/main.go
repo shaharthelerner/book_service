@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	"net/http"
+	"pkg/service/pkg/consts"
 	"pkg/service/pkg/controller"
 	books_repository "pkg/service/pkg/repository/books"
 	users_repository "pkg/service/pkg/repository/users"
@@ -25,7 +26,7 @@ func main() {
 
 	// Repository
 	booksRepository := books_repository.NewBooksRepositoryImpl()
-	usersRepository := users_repository.NewUsersRepositoryImpl()
+	usersRepository := users_repository.NewUsersRepositoryImpl(consts.UserActivityActions)
 
 	// Services
 	booksService := books_service.NewBooksServiceImpl(booksRepository, validator.New())

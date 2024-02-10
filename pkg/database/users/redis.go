@@ -8,14 +8,14 @@ import (
 	"os"
 )
 
-type UsersActivityRedis struct {
+type UsersDatabaseRedis struct {
 	client         *redis.Client
 	actionsToCache int64
 }
 
 const Key = "book_service_exercise:users:activities:%s"
 
-func NewUsersActivityRedis(maxUserActions int64) (*UsersActivityRedis, error) {
+func NewUsersRedis(maxUserActions int64) (*UsersDatabaseRedis, error) {
 	addr := os.Getenv("REDIS_ADDR")
 	if addr == "" {
 		addr = "localhost:6379"
@@ -30,13 +30,13 @@ func NewUsersActivityRedis(maxUserActions int64) (*UsersActivityRedis, error) {
 		return nil, err
 	}
 
-	return &UsersActivityRedis{
+	return &UsersDatabaseRedis{
 		client:         client,
 		actionsToCache: maxUserActions,
 	}, nil
 }
 
-func (r *UsersActivityRedis) CreateUserAction(username string, action string) error {
+func (r *UsersDatabaseRedis) SaveAction(username string, action string) error {
 	key := fmt.Sprintf(Key, username)
 
 	// Push the action onto the left side of the list
@@ -54,7 +54,7 @@ func (r *UsersActivityRedis) CreateUserAction(username string, action string) er
 	return nil
 }
 
-func (r *UsersActivityRedis) GetUserActivity(username string) ([]string, error) {
+func (r *UsersDatabaseRedis) GetUserActivity(username string) ([]string, error) {
 	key := fmt.Sprintf(Key, username)
 
 	activities, err := r.client.LRange(context.Background(), key, 0, r.actionsToCache-1).Result()
@@ -66,7 +66,7 @@ func (r *UsersActivityRedis) GetUserActivity(username string) ([]string, error) 
 	return activities, nil
 }
 
-func (r *UsersActivityRedis) Close() error {
+func (r *UsersDatabaseRedis) Close() error {
 	return r.client.Close()
 }
 
@@ -74,12 +74,12 @@ func (r *UsersActivityRedis) Close() error {
 const User = "user3"
 
 func SaveMockCache() {
-	client, err := NewUsersActivityRedis(MaxActions)
+	client, err := NewUsersRedis(MaxActions)
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
-	defer func(client *UsersActivityRedis) {
+	defer func(client *UsersDatabaseRedis) {
 		err := client.Close()
 		if err != nil {
 
@@ -87,22 +87,22 @@ func SaveMockCache() {
 	}(client)
 
 	// Record user actions
-	if err := client.CreateUserAction(User, "GET /api/resource11"); err != nil {
+	if err := client.SaveAction(User, "GET /api/resource11"); err != nil {
 		log.Fatal(err)
 	}
-	if err := client.CreateUserAction(User, "POST /api/resource21"); err != nil {
+	if err := client.SaveAction(User, "POST /api/resource21"); err != nil {
 		log.Fatal(err)
 	}
-	if err := client.CreateUserAction(User, "PUT /api/resource31"); err != nil {
+	if err := client.SaveAction(User, "PUT /api/resource31"); err != nil {
 		log.Fatal(err)
 	}
-	if err := client.CreateUserAction(User, "PUT /api/resource41"); err != nil {
+	if err := client.SaveAction(User, "PUT /api/resource41"); err != nil {
 		log.Fatal(err)
 	}
-	if err := client.CreateUserAction(User, "PUT /api/resource51"); err != nil {
+	if err := client.SaveAction(User, "PUT /api/resource51"); err != nil {
 		log.Fatal(err)
 	}
-	if err := client.CreateUserAction(User, "PUT /api/resource61"); err != nil {
+	if err := client.SaveAction(User, "PUT /api/resource61"); err != nil {
 		log.Fatal(err)
 	}
 

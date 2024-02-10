@@ -9,11 +9,6 @@ type Book struct {
 	PublishDate    string  `json:"publish_date"`
 }
 
-type UserActivity struct {
-	Method string
-	Route  string
-}
-
 type BookFilters struct {
 	Title      string
 	AuthorName string
@@ -27,4 +22,13 @@ type BookSource struct {
 	Price          float64 `json:"price"`
 	EbookAvailable bool    `json:"ebook_available"`
 	PublishDate    string  `json:"publish_date"`
+}
+
+type UserAction struct {
+	Username string
+	Action   string
+}
+
+type UserActivity struct {
+	Actions []string
 }

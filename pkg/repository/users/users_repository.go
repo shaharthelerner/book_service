@@ -1,6 +1,8 @@
 package users_repository
 
+import "pkg/service/pkg/models"
+
 type UsersRepository interface {
-	SaveActivity() error
-	GetActivities() error
+	SaveAction(ua models.UserAction) error
+	GetActivity(username string) (*models.UserActivity, error)
 }

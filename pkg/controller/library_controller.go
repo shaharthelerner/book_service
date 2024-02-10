@@ -4,7 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"pkg/service/pkg/data/request"
-	"pkg/service/pkg/models"
 	books_service "pkg/service/pkg/service/books"
 	users_service "pkg/service/pkg/service/users"
 )
@@ -34,7 +33,7 @@ func (lc *LibraryController) CreateBook(ctx *gin.Context) {
 		return
 	}
 
-	err = saveUserActivity(lc, req.Username, "POST", "/books")
+	err = saveUserAction(lc, req.Username, "POST", "/books")
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -49,13 +48,14 @@ func (lc *LibraryController) GetBooks(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"bind error": err.Error()})
 		return
 	}
+
 	res, err := lc.booksService.GetBooks(req)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	err = saveUserActivity(lc, req.Username, "GET", "/search")
+	err = saveUserAction(lc, req.Username, "GET", "/search")
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -67,7 +67,7 @@ func (lc *LibraryController) GetBooks(ctx *gin.Context) {
 func (lc *LibraryController) GetBookById(ctx *gin.Context) {
 	req := request.GetBookByIdRequest{}
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.JSON(400, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -77,11 +77,12 @@ func (lc *LibraryController) GetBookById(ctx *gin.Context) {
 		return
 	}
 
-	err = saveUserActivity(lc, req.Username, "GET", "/books")
+	err = saveUserAction(lc, req.Username, "GET", "/books")
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
 	ctx.IndentedJSON(http.StatusOK, res.Book)
 }
 
@@ -98,11 +99,12 @@ func (lc *LibraryController) UpdateBookTitle(ctx *gin.Context) {
 		return
 	}
 
-	err = saveUserActivity(lc, req.Username, "PUT", "/books")
+	err = saveUserAction(lc, req.Username, "PUT", "/books")
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
 	ctx.IndentedJSON(http.StatusOK, gin.H{"message": "book updated successfully"})
 }
 
@@ -119,7 +121,7 @@ func (lc *LibraryController) DeleteBook(ctx *gin.Context) {
 		return
 	}
 
-	err = saveUserActivity(lc, req.Username, "DELETE", "/books")
+	err = saveUserAction(lc, req.Username, "DELETE", "/books")
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -131,7 +133,7 @@ func (lc *LibraryController) DeleteBook(ctx *gin.Context) {
 func (lc *LibraryController) GetBooksInventory(ctx *gin.Context) {
 	req := request.GetBooksInventoryRequest{}
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.JSON(400, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -141,7 +143,7 @@ func (lc *LibraryController) GetBooksInventory(ctx *gin.Context) {
 		return
 	}
 
-	err = saveUserActivity(lc, req.Username, "GET", "/store")
+	err = saveUserAction(lc, req.Username, "GET", "/store")
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -166,15 +168,13 @@ func (lc *LibraryController) GetUserActivity(ctx *gin.Context) {
 	ctx.IndentedJSON(http.StatusOK, res.Actions)
 }
 
-func saveUserActivity(lc *LibraryController, username string, method string, route string) error {
+func saveUserAction(lc *LibraryController, username string, method string, route string) error {
 	ua := request.CreateUserActivityRequest{
 		Username: username,
-		Activity: models.UserActivity{
-			Method: method,
-			Route:  route,
-		},
+		Method:   method,
+		Route:    route,
 	}
-	return lc.usersService.CreateUserActivity(ua)
+	return lc.usersService.SaveUserAction(ua)
 }
 
 // Remove

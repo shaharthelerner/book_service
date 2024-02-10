@@ -10,11 +10,11 @@ import (
 	"pkg/service/pkg/models"
 )
 
-type BooksRepositoryImpl struct {
-}
-
 // const IndexName = "books_shahar_with_synonym"
 const IndexName = "books_shahar"
+
+type BooksRepositoryImpl struct {
+}
 
 func NewBooksRepositoryImpl() BooksRepository {
 	return &BooksRepositoryImpl{}

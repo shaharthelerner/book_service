@@ -6,6 +6,6 @@ import (
 )
 
 type UsersService interface {
-	CreateUserActivity(req request.CreateUserActivityRequest) error
+	SaveUserAction(req request.CreateUserActivityRequest) error
 	GetUserActivities(req request.GetUserActivitiesRequest) (*response.GetUserActivitiesResponse, error)
 }

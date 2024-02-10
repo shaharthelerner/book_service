@@ -501,7 +501,7 @@ package before_refactor
 //		log.Fatal(err)
 //		return
 //	}
-//	if err = r.CreateUserAction(client, username, method+" "+route); err != nil {
+//	if err = r.SaveAction(client, username, method+" "+route); err != nil {
 //		if err != nil {
 //			log.Fatalf("Error saving user activity: %v", err)
 //			// TODO should I fail the response?
