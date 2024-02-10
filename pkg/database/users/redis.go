@@ -1,4 +1,4 @@
-package database
+package users_database
 
 import (
 	"context"
@@ -13,7 +13,6 @@ type UsersActivityRedis struct {
 	actionsToCache int64
 }
 
-const MaxActions = 3
 const Key = "book_service_exercise:users:activities:%s"
 
 func NewUsersActivityRedis(maxUserActions int64) (*UsersActivityRedis, error) {
@@ -37,7 +36,7 @@ func NewUsersActivityRedis(maxUserActions int64) (*UsersActivityRedis, error) {
 	}, nil
 }
 
-func (r *UsersActivityRedis) SetUserActivity(username string, action string) error {
+func (r *UsersActivityRedis) CreateUserAction(username string, action string) error {
 	key := fmt.Sprintf(Key, username)
 
 	// Push the action onto the left side of the list
@@ -58,13 +57,13 @@ func (r *UsersActivityRedis) SetUserActivity(username string, action string) err
 func (r *UsersActivityRedis) GetUserActivity(username string) ([]string, error) {
 	key := fmt.Sprintf(Key, username)
 
-	actions, err := r.client.LRange(context.Background(), key, 0, r.actionsToCache-1).Result()
+	activities, err := r.client.LRange(context.Background(), key, 0, r.actionsToCache-1).Result()
 	if err != nil {
 		log.Fatal(err)
 		return nil, err
 	}
 
-	return actions, nil
+	return activities, nil
 }
 
 func (r *UsersActivityRedis) Close() error {
@@ -88,22 +87,22 @@ func SaveMockCache() {
 	}(client)
 
 	// Record user actions
-	if err := client.SetUserActivity(User, "GET /api/resource11"); err != nil {
+	if err := client.CreateUserAction(User, "GET /api/resource11"); err != nil {
 		log.Fatal(err)
 	}
-	if err := client.SetUserActivity(User, "POST /api/resource21"); err != nil {
+	if err := client.CreateUserAction(User, "POST /api/resource21"); err != nil {
 		log.Fatal(err)
 	}
-	if err := client.SetUserActivity(User, "PUT /api/resource31"); err != nil {
+	if err := client.CreateUserAction(User, "PUT /api/resource31"); err != nil {
 		log.Fatal(err)
 	}
-	if err := client.SetUserActivity(User, "PUT /api/resource41"); err != nil {
+	if err := client.CreateUserAction(User, "PUT /api/resource41"); err != nil {
 		log.Fatal(err)
 	}
-	if err := client.SetUserActivity(User, "PUT /api/resource51"); err != nil {
+	if err := client.CreateUserAction(User, "PUT /api/resource51"); err != nil {
 		log.Fatal(err)
 	}
-	if err := client.SetUserActivity(User, "PUT /api/resource61"); err != nil {
+	if err := client.CreateUserAction(User, "PUT /api/resource61"); err != nil {
 		log.Fatal(err)
 	}
 

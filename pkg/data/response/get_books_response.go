@@ -1,6 +1,12 @@
 package response
 
+import "pkg/service/pkg/models"
+
 type GetBooksResponse struct {
+	Books []models.BookSource `json:"books"` // TODO change to models.Book
+}
+
+type GetBooksElasticResponse struct {
 	Hits BookHits `json:"hits"`
 }
 
@@ -9,13 +15,5 @@ type BookHits struct {
 }
 
 type BookHit struct {
-	Source BookSource `json:"_source"`
-}
-
-type BookSource struct {
-	Title          string  `json:"title"`
-	AuthorName     string  `json:"author_name"`
-	Price          float64 `json:"price"`
-	EbookAvailable bool    `json:"ebook_available"`
-	PublishDate    string  `json:"publish_date"`
+	Source models.BookSource `json:"_source"`
 }

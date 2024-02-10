@@ -1,9 +1,13 @@
-package repository
+package books_repository
+
+import (
+	"pkg/service/pkg/models"
+)
 
 type BooksRepository interface {
-	GetAll()
-	GetById()
-	Create() error
-	Update() error
-	Delete() error
+	Create(book models.Book) error
+	Get(filters models.BookFilters) (*[]models.BookSource, error)
+	GetById(bookId string) (*models.Book, error)
+	UpdateTitle(bookId string, title string) error
+	Delete(bookId string) error
 }

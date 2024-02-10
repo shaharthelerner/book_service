@@ -5,14 +5,15 @@ import (
 	"pkg/service/pkg/controller"
 )
 
-func Routes(router *gin.Engine) *gin.Engine {
-	router.GET("/search", controller.GetBooks)
-	router.GET("/books", controller.GetBookById)
-	router.POST("/books", controller.CreateBook)
-	router.PUT("/books", controller.UpdateBookTitle)
-	router.DELETE("/books", controller.DeleteBook)
-	router.GET("/store", controller.GetBooksInventory)
-	router.GET("/activity", controller.GetUserActivity)
+func NewRouter(libraryController *controller.LibraryController) *gin.Engine {
+	router := gin.Default()
+	router.POST("/books", libraryController.CreateBook)
+	router.GET("/search", libraryController.GetBooks)
+	router.GET("/books", libraryController.GetBookById)
+	router.PUT("/books", libraryController.UpdateBookTitle)
+	router.DELETE("/books", libraryController.DeleteBook)
+	router.GET("/store", libraryController.GetBooksInventory)
+	router.GET("/activity", libraryController.GetUserActivity)
 
 	return router
 }

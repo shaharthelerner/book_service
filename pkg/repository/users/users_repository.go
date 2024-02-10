@@ -1,6 +1,6 @@
-package repository
+package users_repository
 
-type BooksRepository interface {
+type UsersRepository interface {
 	SaveActivity() error
 	GetActivities() error
 }

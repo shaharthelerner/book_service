@@ -400,7 +400,7 @@ package before_refactor
 //	}
 //
 //	//username := req.Username
-//	//fmt.Println("Getting store inventory. Activities for user: " + username)
+//	//fmt.Println("Getting store inventory. Actions for user: " + username)
 //
 //	query := buildInventoryQuery()
 //	before_refactor, err := fetchBooks(query)
@@ -501,7 +501,7 @@ package before_refactor
 //		log.Fatal(err)
 //		return
 //	}
-//	if err = r.SetUserActivity(client, username, method+" "+route); err != nil {
+//	if err = r.CreateUserAction(client, username, method+" "+route); err != nil {
 //		if err != nil {
 //			log.Fatalf("Error saving user activity: %v", err)
 //			// TODO should I fail the response?

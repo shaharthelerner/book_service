@@ -1,31 +1,31 @@
-package database
+package books_database
 
 import (
 	"encoding/json"
 	"github.com/elastic/go-elasticsearch"
 	"github.com/elastic/go-elasticsearch/esapi"
 	"log"
-	"pkg/service/pkg/data/request"
+	"pkg/service/pkg/models"
 	"strings"
 )
 
-type BooksLibraryElastic struct {
+type BooksDatabaseElastic struct {
 	Client *elasticsearch.Client
 	Index  string
 }
 
-func NewBooksLibraryElastic(index string) (*BooksLibraryElastic, error) {
+func NewBooksLibraryElastic(index string) (*BooksDatabaseElastic, error) {
 	elasticClient, err := elasticsearch.NewDefaultClient()
 	if err != nil {
 		return nil, err
 	}
-	return &BooksLibraryElastic{
+	return &BooksDatabaseElastic{
 		Client: elasticClient,
 		Index:  index,
 	}, nil
 }
 
-func (e *BooksLibraryElastic) BuildBooksSearchRequest(query map[string]interface{}) (*esapi.SearchRequest, error) {
+func (bd *BooksDatabaseElastic) BuildBooksSearchRequest(query map[string]interface{}) (*esapi.SearchRequest, error) {
 	body, err := json.Marshal(query)
 	if err != nil {
 		log.Fatalf("Error encoding query: %s", err)
@@ -33,26 +33,25 @@ func (e *BooksLibraryElastic) BuildBooksSearchRequest(query map[string]interface
 	}
 
 	return &esapi.SearchRequest{
-		Index: []string{e.Index},
+		Index: []string{bd.Index},
 		Body:  strings.NewReader(string(body)),
 	}, nil
 }
 
-func (e *BooksLibraryElastic) BuildBookSearchRequest(bookId string) *esapi.GetRequest {
+func (bd *BooksDatabaseElastic) BuildBookSearchRequest(bookId string) *esapi.GetRequest {
 	return &esapi.GetRequest{
-		Index:      e.Index,
+		Index:      bd.Index,
 		DocumentID: bookId,
 	}
 }
 
-// TODO change to use models.Book
-func (e *BooksLibraryElastic) BuildBookCreateRequest(req *request.CreateBookRequest, bookId string) (*esapi.CreateRequest, error) {
+func (bd *BooksDatabaseElastic) BuildBookCreateRequest(book models.Book) (*esapi.CreateRequest, error) {
 	query := map[string]interface{}{
-		"title":           req.Title,
-		"author_name":     req.AuthorName,
-		"price":           req.Price,
-		"ebook_available": req.EbookAvailable,
-		"publish_date":    req.PublishDate,
+		"title":           book.Title,
+		"author_name":     book.AuthorName,
+		"price":           book.Price,
+		"ebook_available": book.EbookAvailable,
+		"publish_date":    book.PublishDate,
 	}
 
 	body, err := json.Marshal(query)
@@ -62,18 +61,17 @@ func (e *BooksLibraryElastic) BuildBookCreateRequest(req *request.CreateBookRequ
 	}
 
 	return &esapi.CreateRequest{
-		Index:      e.Index,
-		DocumentID: bookId,
+		Index:      bd.Index,
+		DocumentID: book.Id,
 		Body:       strings.NewReader(string(body)),
 		//Refresh:    "true",
 	}, nil
 }
 
-// TODO change to use models.UpdateBook
-func (e *BooksLibraryElastic) BuildBookUpdateRequest(req *request.UpdateBookTitleRequest) (*esapi.UpdateRequest, error) {
+func (bd *BooksDatabaseElastic) BuildBookUpdateRequest(bookId string, title string) (*esapi.UpdateRequest, error) {
 	query := map[string]interface{}{
 		"doc": map[string]interface{}{
-			"title": req.Title,
+			"title": title,
 		},
 	}
 
@@ -84,16 +82,16 @@ func (e *BooksLibraryElastic) BuildBookUpdateRequest(req *request.UpdateBookTitl
 	}
 
 	return &esapi.UpdateRequest{
-		Index:      e.Index,
-		DocumentID: req.Id,
+		Index:      bd.Index,
+		DocumentID: bookId,
 		Body:       strings.NewReader(string(body)),
 		//Refresh:    "true",
 	}, nil
 }
 
-func (e *BooksLibraryElastic) BuildBookDeleteRequest(bookId string) *esapi.DeleteRequest {
+func (bd *BooksDatabaseElastic) BuildBookDeleteRequest(bookId string) *esapi.DeleteRequest {
 	return &esapi.DeleteRequest{
-		Index:      e.Index,
+		Index:      bd.Index,
 		DocumentID: bookId,
 	}
 }

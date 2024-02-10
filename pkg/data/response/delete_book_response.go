@@ -1,5 +1,5 @@
 package response
 
-type DeleteBookResponse struct {
+type DeleteBookElasticResponse struct {
 	Result string `json:"result"`
 }
