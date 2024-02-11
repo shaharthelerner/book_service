@@ -7,7 +7,6 @@ import (
 	"github.com/elastic/go-elasticsearch/esapi"
 	"log"
 	"pkg/service/pkg/consts"
-	"pkg/service/pkg/data/response"
 	"pkg/service/pkg/models"
 	"strings"
 )
@@ -84,13 +83,7 @@ func (e *ElasticBooksRepository) buildDeleteRequest(docId string) *esapi.DeleteR
 	}
 }
 
-func (e *ElasticBooksRepository) fetchBooks(filters models.BookFilters) (*[]response.BookHit, error) {
-	query := buildBooksFetchQuery(filters)
-	req, err := e.buildSearchRequest(query)
-	if err != nil {
-		return nil, err
-	}
-
+func executeElasticRequest(req esapi.Request) (*esapi.Response, error) {
 	client, err := elasticsearch.NewDefaultClient()
 	if err != nil {
 		return nil, err
@@ -100,14 +93,8 @@ func (e *ElasticBooksRepository) fetchBooks(filters models.BookFilters) (*[]resp
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
 
-	data := response.GetBooksElasticResponse{}
-	if err = json.NewDecoder(res.Body).Decode(&data); err != nil {
-		return nil, err
-	}
-
-	return &data.Hits.Hits, nil
+	return res, nil
 }
 
 func buildBooksFetchQuery(filters models.BookFilters) map[string]interface{} {

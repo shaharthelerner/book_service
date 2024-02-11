@@ -1,10 +1,8 @@
 package books_repository
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
-	"github.com/elastic/go-elasticsearch"
 	"net/http"
 	"pkg/service/pkg/data/response"
 	"pkg/service/pkg/models"
@@ -20,17 +18,12 @@ func NewElasticsearchBooksRepository(indexName string) books_repository.BooksRep
 }
 
 func (e *ElasticBooksRepository) Create(book models.Book) error {
-	esReq, err := e.buildCreateRequest(e.Index, book)
+	req, err := e.buildCreateRequest(e.Index, book)
 	if err != nil {
 		return err
 	}
 
-	client, err := elasticsearch.NewDefaultClient()
-	if err != nil {
-		return err
-	}
-
-	res, err := esReq.Do(context.Background(), client)
+	res, err := executeElasticRequest(req)
 	if err != nil {
 		return err
 	}
@@ -40,13 +33,26 @@ func (e *ElasticBooksRepository) Create(book models.Book) error {
 }
 
 func (e *ElasticBooksRepository) Get(filters models.BookFilters) (*[]models.BookSource, error) {
-	fetchedBooks, err := e.fetchBooks(filters)
+	query := buildBooksFetchQuery(filters)
+	req, err := e.buildSearchRequest(query)
 	if err != nil {
 		return nil, err
 	}
 
+	res, err := executeElasticRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	data := response.GetBooksElasticResponse{}
+	if err = json.NewDecoder(res.Body).Decode(&data); err != nil {
+		return nil, err
+	}
+
+	// TODO: see how can add the book ID
 	books := make([]models.BookSource, 0)
-	for _, b := range *fetchedBooks {
+	for _, b := range data.Hits.Hits {
 		books = append(books, b.Source)
 	}
 
@@ -54,18 +60,11 @@ func (e *ElasticBooksRepository) Get(filters models.BookFilters) (*[]models.Book
 }
 
 func (e *ElasticBooksRepository) GetById(bookId string) (*models.Book, error) {
-	esReq := e.buildGetRequest(bookId)
-
-	client, err := elasticsearch.NewDefaultClient()
+	req := e.buildGetRequest(bookId)
+	res, err := executeElasticRequest(req)
 	if err != nil {
 		return nil, err
 	}
-
-	res, err := esReq.Do(context.Background(), client)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
 
 	data := response.GetBookByIdElasticResponse{}
 	if err = json.NewDecoder(res.Body).Decode(&data); err != nil {
@@ -81,21 +80,15 @@ func (e *ElasticBooksRepository) GetById(bookId string) (*models.Book, error) {
 }
 
 func (e *ElasticBooksRepository) UpdateTitle(bookId string, title string) error {
-	esReq, err := e.buildUpdateRequest(bookId, title)
+	req, err := e.buildUpdateRequest(bookId, title)
 	if err != nil {
 		return err
 	}
 
-	client, err := elasticsearch.NewDefaultClient()
+	res, err := executeElasticRequest(req)
 	if err != nil {
 		return err
 	}
-
-	res, err := esReq.Do(context.Background(), client)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
 
 	data := response.UpdateBookTitleElasticResponse{}
 	if err = json.NewDecoder(res.Body).Decode(&data); err != nil {
@@ -113,18 +106,12 @@ func (e *ElasticBooksRepository) UpdateTitle(bookId string, title string) error 
 }
 
 func (e *ElasticBooksRepository) Delete(bookId string) error {
-	esReq := e.buildDeleteRequest(bookId)
+	req := e.buildDeleteRequest(bookId)
 
-	client, err := elasticsearch.NewDefaultClient()
+	res, err := executeElasticRequest(req)
 	if err != nil {
 		return err
 	}
-
-	res, err := esReq.Do(context.Background(), client)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
 
 	data := response.DeleteBookElasticResponse{}
 	if err = json.NewDecoder(res.Body).Decode(&data); err != nil {
