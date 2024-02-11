@@ -32,3 +32,8 @@ type UserAction struct {
 type UserActivity struct {
 	Actions []string
 }
+
+type StoreInventory struct {
+	TotalBooks    int
+	UniqueAuthors int
+}

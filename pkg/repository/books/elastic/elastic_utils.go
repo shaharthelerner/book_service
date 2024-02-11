@@ -122,6 +122,21 @@ func buildBooksFetchQuery(filters models.BookFilters) map[string]interface{} {
 	return query
 }
 
+func buildInventoryFetchQuery() map[string]interface{} {
+	query := map[string]interface{}{
+		"size": 0,
+		"aggregations": map[string]interface{}{
+			consts.UniqueAuthorsAggregationName: map[string]interface{}{
+				"cardinality": map[string]interface{}{
+					"field": "author_name.keyword",
+				},
+			},
+		},
+	}
+
+	return query
+}
+
 func executeElasticRequest(req esapi.Request) (*esapi.Response, error) {
 	client, err := elasticsearch.NewDefaultClient()
 	if err != nil {

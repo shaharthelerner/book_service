@@ -144,3 +144,27 @@ func (e *ElasticBooksRepository) Delete(bookId string) error {
 
 	return nil
 }
+
+func (e *ElasticBooksRepository) GetInventory() (*models.StoreInventory, error) {
+	query := buildInventoryFetchQuery()
+	req, err := e.buildSearchRequest(query)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := executeElasticRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	data := response.GetInventoryElasticResponse{}
+	if err = json.NewDecoder(res.Body).Decode(&data); err != nil {
+		return nil, err
+	}
+
+	return &models.StoreInventory{
+		TotalBooks:    data.BookHits.Total.Value,
+		UniqueAuthors: data.Aggregations.UniqueAuthors.Value,
+	}, nil
+}

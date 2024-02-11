@@ -7,10 +7,10 @@ type GetBooksResponse struct {
 }
 
 type GetBooksElasticResponse struct {
-	Hits BookHits `json:"hits"`
+	Hits BooksHits `json:"hits"`
 }
 
-type BookHits struct {
+type BooksHits struct {
 	Hits []BookHit `json:"hits"`
 }
 

@@ -82,18 +82,13 @@ func (bs *BooksServiceImpl) DeleteBook(req request.DeleteBookRequest) error {
 }
 
 func (bs *BooksServiceImpl) GetBooksInventory() (*response.GetBooksInventoryResponse, error) {
-	books, err := bs.BooksRepository.Get(models.BookFilters{})
+	res, err := bs.BooksRepository.GetInventory()
 	if err != nil {
 		return nil, err
 	}
 
-	uniqueAuthors := make(map[string]struct{})
-	for _, b := range *books {
-		uniqueAuthors[b.AuthorName] = struct{}{}
-	}
-
 	return &response.GetBooksInventoryResponse{
-		TotalBooks: len(*books),
-		Authors:    len(uniqueAuthors),
+		Books:   res.TotalBooks,
+		Authors: res.UniqueAuthors,
 	}, nil
 }
