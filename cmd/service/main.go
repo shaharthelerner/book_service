@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/go-playground/validator/v10"
 	"net/http"
 	"pkg/service/pkg/consts"
@@ -28,7 +29,7 @@ func main() {
 	routes := router.NewRouter(libraryController)
 
 	server := &http.Server{
-		Addr:    ":8080",
+		Addr:    fmt.Sprintf(":%d", consts.ServerPort),
 		Handler: routes,
 	}
 
