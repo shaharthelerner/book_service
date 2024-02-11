@@ -1,0 +1,152 @@
+package books_repository
+
+import (
+	"context"
+	"encoding/json"
+	"github.com/elastic/go-elasticsearch"
+	"github.com/elastic/go-elasticsearch/esapi"
+	"log"
+	"pkg/service/pkg/consts"
+	"pkg/service/pkg/data/response"
+	"pkg/service/pkg/models"
+	"strings"
+)
+
+// TODO see how can I reuse the "req.Do(context.Background(), client)" code
+
+func (e *ElasticBooksRepository) buildCreateRequest(index string, book models.Book) (*esapi.CreateRequest, error) {
+	query := map[string]interface{}{
+		"title":           book.Title,
+		"author_name":     book.AuthorName,
+		"price":           book.Price,
+		"ebook_available": book.EbookAvailable,
+		"publish_date":    book.PublishDate,
+	}
+
+	body, err := json.Marshal(query)
+	if err != nil {
+		log.Fatalf("Error encoding query: %s", err)
+		return nil, err
+	}
+
+	return &esapi.CreateRequest{
+		Index:      index,
+		DocumentID: book.Id,
+		Body:       strings.NewReader(string(body)),
+		//Refresh:    "true",
+	}, nil
+}
+
+func (e *ElasticBooksRepository) buildSearchRequest(query map[string]interface{}) (*esapi.SearchRequest, error) {
+	body, err := json.Marshal(query)
+	if err != nil {
+		return nil, err
+	}
+
+	return &esapi.SearchRequest{
+		Index: []string{e.Index},
+		Body:  strings.NewReader(string(body)),
+	}, nil
+}
+
+func (e *ElasticBooksRepository) buildGetRequest(docId string) *esapi.GetRequest {
+	return &esapi.GetRequest{
+		Index:      e.Index,
+		DocumentID: docId,
+	}
+}
+
+func (e *ElasticBooksRepository) buildUpdateRequest(docId string, title string) (*esapi.UpdateRequest, error) {
+	query := map[string]interface{}{
+		"doc": map[string]interface{}{
+			"title": title,
+		},
+	}
+
+	body, err := json.Marshal(query)
+	if err != nil {
+		log.Fatalf("Error encoding query: %s", err)
+		return nil, err
+	}
+
+	return &esapi.UpdateRequest{
+		Index:      e.Index,
+		DocumentID: docId,
+		Body:       strings.NewReader(string(body)),
+		//Refresh:    "true",
+	}, nil
+}
+
+func (e *ElasticBooksRepository) buildDeleteRequest(docId string) *esapi.DeleteRequest {
+	return &esapi.DeleteRequest{
+		Index:      e.Index,
+		DocumentID: docId,
+	}
+}
+
+func (e *ElasticBooksRepository) fetchBooks(filters models.BookFilters) (*[]response.BookHit, error) {
+	query := buildBooksFetchQuery(filters)
+	req, err := e.buildSearchRequest(query)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := elasticsearch.NewDefaultClient()
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := req.Do(context.Background(), client)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	data := response.GetBooksElasticResponse{}
+	if err = json.NewDecoder(res.Body).Decode(&data); err != nil {
+		return nil, err
+	}
+
+	return &data.Hits.Hits, nil
+}
+
+func buildBooksFetchQuery(filters models.BookFilters) map[string]interface{} {
+	conditions := make([]map[string]interface{}, 0)
+
+	if filters.Title != "" {
+		conditions = append(conditions, map[string]interface{}{
+			"term": map[string]interface{}{
+				"title.keyword": filters.Title,
+			},
+		})
+	}
+	if filters.AuthorName != "" {
+		conditions = append(conditions, map[string]interface{}{
+			"match_phrase": map[string]interface{}{
+				"author_name": filters.AuthorName,
+			},
+		})
+	}
+	if filters.MinPrice != 0 && filters.MaxPrice != 0 {
+		conditions = append(conditions, map[string]interface{}{
+			"range": map[string]interface{}{
+				"price": map[string]interface{}{
+					"gte": filters.MinPrice,
+					"lte": filters.MaxPrice,
+				},
+			},
+		})
+	}
+	query := map[string]interface{}{
+		"size": consts.BooksQuerySize,
+	}
+	if len(conditions) > 0 {
+		query["query"] = map[string]interface{}{
+			"bool": map[string]interface{}{
+				"must": conditions,
+			},
+		}
+	}
+
+	return query
+}

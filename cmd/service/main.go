@@ -1,32 +1,21 @@
 package main
 
 import (
-	"fmt"
 	"github.com/go-playground/validator/v10"
 	"net/http"
 	"pkg/service/pkg/consts"
 	"pkg/service/pkg/controller"
-	books_repository "pkg/service/pkg/repository/books"
-	users_repository "pkg/service/pkg/repository/users"
+	books_repository "pkg/service/pkg/repository/books/elastic"
+	users_repository "pkg/service/pkg/repository/users/redis"
 	"pkg/service/pkg/router"
 	books_service "pkg/service/pkg/service/books"
 	users_service "pkg/service/pkg/service/users"
 )
 
 func main() {
-	fmt.Println("Hello, World!")
-	//r := gin.Default()
-	//router.NewRouter(r)
-	//err := r.Run()
-	//if err != nil {
-	//	return
-	//}
-	//before_refactor.StartService()
-	//before_refactor.SaveMockCache()
-
-	// Repository
-	booksRepository := books_repository.NewBooksRepositoryImpl()
-	usersRepository := users_repository.NewUsersRepositoryImpl(consts.UserActivityActions)
+	// Repositories
+	booksRepository := books_repository.NewElasticsearchBooksRepository(consts.BooksIndexName)
+	usersRepository := users_repository.NewRedisUsersRepository(consts.UserActivityActions)
 
 	// Services
 	booksService := books_service.NewBooksServiceImpl(booksRepository, validator.New())
