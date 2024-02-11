@@ -1,6 +1,6 @@
 package request
 
 type GetBookByIdRequest struct {
-	Id       string `form:"id" binding:"required"`
+	Id       string `binding:"required"`
 	Username string `form:"username" binding:"required"`
 }

@@ -65,7 +65,8 @@ func (lc *LibraryController) GetBooks(ctx *gin.Context) {
 }
 
 func (lc *LibraryController) GetBookById(ctx *gin.Context) {
-	req := request.GetBookByIdRequest{}
+	bookId := ctx.Param("id")
+	req := request.GetBookByIdRequest{Id: bookId}
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -87,7 +88,8 @@ func (lc *LibraryController) GetBookById(ctx *gin.Context) {
 }
 
 func (lc *LibraryController) UpdateBookTitle(ctx *gin.Context) {
-	req := request.UpdateBookTitleRequest{}
+	bookId := ctx.Param("id")
+	req := request.UpdateBookTitleRequest{Id: bookId}
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -109,7 +111,8 @@ func (lc *LibraryController) UpdateBookTitle(ctx *gin.Context) {
 }
 
 func (lc *LibraryController) DeleteBook(ctx *gin.Context) {
-	req := request.DeleteBookRequest{}
+	bookId := ctx.Param("id")
+	req := request.DeleteBookRequest{Id: bookId}
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(400, gin.H{"error": err.Error()})
 		return
