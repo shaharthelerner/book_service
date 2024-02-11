@@ -3,7 +3,7 @@ package response
 import "pkg/service/pkg/models"
 
 type CreateBookResponse struct {
-	Book models.Book
+	Book models.Book `json:"book"`
 }
 
 type CreateBookElasticResponse struct {

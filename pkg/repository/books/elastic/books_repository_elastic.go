@@ -29,10 +29,18 @@ func (e *ElasticBooksRepository) Create(book models.Book) error {
 	}
 	defer res.Body.Close()
 
+	data := response.CreateBookElasticResponse{}
+	if err = json.NewDecoder(res.Body).Decode(&data); err != nil {
+		return err
+	}
+	if data.Error != nil {
+		return errors.New("error creating book")
+	}
+
 	return nil
 }
 
-func (e *ElasticBooksRepository) Get(filters models.BookFilters) (*[]models.BookSource, error) {
+func (e *ElasticBooksRepository) Get(filters models.BookFilters) (*[]models.Book, error) {
 	query := buildBooksFetchQuery(filters)
 	req, err := e.buildSearchRequest(query)
 	if err != nil {
@@ -50,10 +58,17 @@ func (e *ElasticBooksRepository) Get(filters models.BookFilters) (*[]models.Book
 		return nil, err
 	}
 
-	// TODO: see how can add the book ID
-	books := make([]models.BookSource, 0)
+	books := make([]models.Book, 0)
 	for _, b := range data.Hits.Hits {
-		books = append(books, b.Source)
+		book := models.Book{
+			Id:             b.Id,
+			Title:          b.Source.Title,
+			AuthorName:     b.Source.AuthorName,
+			Price:          b.Source.Price,
+			EbookAvailable: b.Source.EbookAvailable,
+			PublishDate:    b.Source.PublishDate,
+		}
+		books = append(books, book)
 	}
 
 	return &books, err
@@ -65,6 +80,7 @@ func (e *ElasticBooksRepository) GetById(bookId string) (*models.Book, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer res.Body.Close()
 
 	data := response.GetBookByIdElasticResponse{}
 	if err = json.NewDecoder(res.Body).Decode(&data); err != nil {
@@ -80,7 +96,7 @@ func (e *ElasticBooksRepository) GetById(bookId string) (*models.Book, error) {
 }
 
 func (e *ElasticBooksRepository) UpdateTitle(bookId string, title string) error {
-	req, err := e.buildUpdateRequest(bookId, title)
+	req, err := e.buildUpdateTitleRequest(bookId, title)
 	if err != nil {
 		return err
 	}
@@ -89,6 +105,7 @@ func (e *ElasticBooksRepository) UpdateTitle(bookId string, title string) error 
 	if err != nil {
 		return err
 	}
+	defer res.Body.Close()
 
 	data := response.UpdateBookTitleElasticResponse{}
 	if err = json.NewDecoder(res.Body).Decode(&data); err != nil {
@@ -112,6 +129,7 @@ func (e *ElasticBooksRepository) Delete(bookId string) error {
 	if err != nil {
 		return err
 	}
+	defer res.Body.Close()
 
 	data := response.DeleteBookElasticResponse{}
 	if err = json.NewDecoder(res.Body).Decode(&data); err != nil {

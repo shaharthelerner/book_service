@@ -11,8 +11,6 @@ import (
 	"strings"
 )
 
-// TODO see how can I reuse the "req.Do(context.Background(), client)" code
-
 func (e *ElasticBooksRepository) buildCreateRequest(index string, book models.Book) (*esapi.CreateRequest, error) {
 	query := map[string]interface{}{
 		"title":           book.Title,
@@ -36,6 +34,13 @@ func (e *ElasticBooksRepository) buildCreateRequest(index string, book models.Bo
 	}, nil
 }
 
+func (e *ElasticBooksRepository) buildGetRequest(docId string) *esapi.GetRequest {
+	return &esapi.GetRequest{
+		Index:      e.Index,
+		DocumentID: docId,
+	}
+}
+
 func (e *ElasticBooksRepository) buildSearchRequest(query map[string]interface{}) (*esapi.SearchRequest, error) {
 	body, err := json.Marshal(query)
 	if err != nil {
@@ -48,14 +53,7 @@ func (e *ElasticBooksRepository) buildSearchRequest(query map[string]interface{}
 	}, nil
 }
 
-func (e *ElasticBooksRepository) buildGetRequest(docId string) *esapi.GetRequest {
-	return &esapi.GetRequest{
-		Index:      e.Index,
-		DocumentID: docId,
-	}
-}
-
-func (e *ElasticBooksRepository) buildUpdateRequest(docId string, title string) (*esapi.UpdateRequest, error) {
+func (e *ElasticBooksRepository) buildUpdateTitleRequest(docId string, title string) (*esapi.UpdateRequest, error) {
 	query := map[string]interface{}{
 		"doc": map[string]interface{}{
 			"title": title,
@@ -81,20 +79,6 @@ func (e *ElasticBooksRepository) buildDeleteRequest(docId string) *esapi.DeleteR
 		Index:      e.Index,
 		DocumentID: docId,
 	}
-}
-
-func executeElasticRequest(req esapi.Request) (*esapi.Response, error) {
-	client, err := elasticsearch.NewDefaultClient()
-	if err != nil {
-		return nil, err
-	}
-
-	res, err := req.Do(context.Background(), client)
-	if err != nil {
-		return nil, err
-	}
-
-	return res, nil
 }
 
 func buildBooksFetchQuery(filters models.BookFilters) map[string]interface{} {
@@ -136,4 +120,18 @@ func buildBooksFetchQuery(filters models.BookFilters) map[string]interface{} {
 	}
 
 	return query
+}
+
+func executeElasticRequest(req esapi.Request) (*esapi.Response, error) {
+	client, err := elasticsearch.NewDefaultClient()
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := req.Do(context.Background(), client)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
