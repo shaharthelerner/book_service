@@ -33,7 +33,7 @@ func (lc *LibraryController) CreateBook(ctx *gin.Context) {
 		return
 	}
 
-	err = saveUserAction(lc, req.Username, "POST", "/books")
+	err = lc.saveUserAction(req.Username, "POST", "/books")
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -55,7 +55,7 @@ func (lc *LibraryController) GetBooks(ctx *gin.Context) {
 		return
 	}
 
-	err = saveUserAction(lc, req.Username, "GET", "/books")
+	err = lc.saveUserAction(req.Username, "GET", "/books")
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -78,7 +78,7 @@ func (lc *LibraryController) GetBookById(ctx *gin.Context) {
 		return
 	}
 
-	err = saveUserAction(lc, req.Username, "GET", "/books/:id")
+	err = lc.saveUserAction(req.Username, "GET", "/books/:id")
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -101,7 +101,7 @@ func (lc *LibraryController) UpdateBookTitle(ctx *gin.Context) {
 		return
 	}
 
-	err = saveUserAction(lc, req.Username, "PUT", "/books:id")
+	err = lc.saveUserAction(req.Username, "PUT", "/books:id")
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -124,7 +124,7 @@ func (lc *LibraryController) DeleteBook(ctx *gin.Context) {
 		return
 	}
 
-	err = saveUserAction(lc, req.Username, "DELETE", "/books/:id")
+	err = lc.saveUserAction(req.Username, "DELETE", "/books/:id")
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -146,7 +146,7 @@ func (lc *LibraryController) GetStoreInventory(ctx *gin.Context) {
 		return
 	}
 
-	err = saveUserAction(lc, req.Username, "GET", "/store")
+	err = lc.saveUserAction(req.Username, "GET", "/store")
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -170,13 +170,4 @@ func (lc *LibraryController) GetUserActivity(ctx *gin.Context) {
 	}
 
 	ctx.IndentedJSON(http.StatusOK, res.Actions)
-}
-
-func saveUserAction(lc *LibraryController, username string, method string, route string) error {
-	ua := request.CreateUserActivityRequest{
-		Username: username,
-		Method:   method,
-		Route:    route,
-	}
-	return lc.usersService.SaveUserAction(ua)
 }
