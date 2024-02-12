@@ -22,6 +22,7 @@ func NewUsersRepositoryRedisImpl(activityActions int) users_repository.UsersRepo
 func (r *UsersRepositoryRedis) SaveAction(ua models.UserAction) error {
 	client, err := NewRedisClient()
 	if err != nil {
+		log.Printf("error creating redis client: %s", err)
 		return err
 	}
 	defer client.Close()
@@ -30,11 +31,13 @@ func (r *UsersRepositoryRedis) SaveAction(ua models.UserAction) error {
 
 	// Push the action onto the left side of the list
 	if err = client.LPush(context.Background(), key, ua.Action).Err(); err != nil {
+		log.Printf("error saving action for user %s: %s", ua.Username, err)
 		return err
 	}
 
 	// Trim the list to keep only the last r.ActivityActions elements
 	if err = client.LTrim(context.Background(), key, 0, r.ActivityActions-1).Err(); err != nil {
+		log.Printf("error trimming activity for user %s: %s", ua.Username, err)
 		return err
 	}
 
@@ -44,6 +47,7 @@ func (r *UsersRepositoryRedis) SaveAction(ua models.UserAction) error {
 func (r *UsersRepositoryRedis) GetActivity(username string) (*models.UserActivity, error) {
 	client, err := NewRedisClient()
 	if err != nil {
+		log.Printf("error creating redis client: %s", err)
 		return nil, err
 	}
 	defer client.Close()
