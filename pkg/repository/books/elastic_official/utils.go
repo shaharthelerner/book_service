@@ -11,16 +11,8 @@ import (
 	"strings"
 )
 
-func (e *ElasticBooksRepository) buildCreateRequest(index string, book models.Book) (*esapi.CreateRequest, error) {
-	query := map[string]interface{}{
-		"title":           book.Title,
-		"author_name":     book.AuthorName,
-		"price":           book.Price,
-		"ebook_available": book.EbookAvailable,
-		"publish_date":    book.PublishDate,
-	}
-
-	body, err := json.Marshal(query)
+func (e *ElasticBooksRepository) buildCreateRequest(index string, bookId string, bookSource models.BookSource) (*esapi.CreateRequest, error) {
+	body, err := json.Marshal(bookSource)
 	if err != nil {
 		log.Fatalf("Error encoding query: %s", err)
 		return nil, err
@@ -28,9 +20,8 @@ func (e *ElasticBooksRepository) buildCreateRequest(index string, book models.Bo
 
 	return &esapi.CreateRequest{
 		Index:      index,
-		DocumentID: book.Id,
+		DocumentID: bookId,
 		Body:       strings.NewReader(string(body)),
-		//Refresh:    "true",
 	}, nil
 }
 
@@ -81,7 +72,7 @@ func (e *ElasticBooksRepository) buildDeleteRequest(docId string) *esapi.DeleteR
 	}
 }
 
-func buildBooksFetchQuery(filters models.BookFilters) map[string]interface{} {
+func (e *ElasticBooksRepository) buildBooksFetchQuery(filters models.BookFilters) map[string]interface{} {
 	conditions := make([]map[string]interface{}, 0)
 
 	if filters.Title != "" {
@@ -122,7 +113,7 @@ func buildBooksFetchQuery(filters models.BookFilters) map[string]interface{} {
 	return query
 }
 
-func buildInventoryFetchQuery() map[string]interface{} {
+func (e *ElasticBooksRepository) buildInventoryFetchQuery() map[string]interface{} {
 	query := map[string]interface{}{
 		"size": 0,
 		"aggregations": map[string]interface{}{
@@ -137,7 +128,7 @@ func buildInventoryFetchQuery() map[string]interface{} {
 	return query
 }
 
-func executeElasticRequest(req esapi.Request) (*esapi.Response, error) {
+func (e *ElasticBooksRepository) executeElasticRequest(req esapi.Request) (*esapi.Response, error) {
 	client, err := elasticsearch.NewDefaultClient()
 	if err != nil {
 		return nil, err
@@ -149,4 +140,17 @@ func executeElasticRequest(req esapi.Request) (*esapi.Response, error) {
 	}
 
 	return res, nil
+}
+
+func (e *ElasticBooksRepository) copyStruct(src, dest interface{}) error {
+	srcJSON, err := json.Marshal(src)
+	if err != nil {
+		return err
+	}
+
+	if err = json.Unmarshal(srcJSON, dest); err != nil {
+		return err
+	}
+
+	return nil
 }

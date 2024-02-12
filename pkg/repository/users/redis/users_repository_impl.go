@@ -11,9 +11,9 @@ type RedisUsersRepository struct {
 	ActivityActions int64
 }
 
-func NewRedisUsersRepository(activityActions int64) users_repository.UsersRepository {
+func NewRedisUsersRepository(activityActions int) users_repository.UsersRepository {
 	return &RedisUsersRepository{
-		ActivityActions: activityActions,
+		ActivityActions: int64(activityActions),
 	}
 }
 
@@ -54,25 +54,3 @@ func (r *RedisUsersRepository) GetActivity(username string) (*models.UserActivit
 
 	return &models.UserActivity{Actions: actions}, nil
 }
-
-//func NewRedisClient() (*redis.Client, error) {
-//	addr := os.Getenv("REDIS_ADDR")
-//	if addr == "" {
-//		addr = consts.DefaultRedisAddress
-//	}
-//	options := &redis.Options{
-//		Addr:     addr,
-//		Password: "",
-//		DB:       0,
-//	}
-//	client := redis.NewClient(options)
-//	if _, err := client.Ping(context.Background()).Result(); err != nil {
-//		return nil, err
-//	}
-//
-//	return client, nil
-//}
-//
-//func createUsernameKey(username string) string {
-//	return fmt.Sprintf(consts.UserActivitiesRedisKey, username)
-//}

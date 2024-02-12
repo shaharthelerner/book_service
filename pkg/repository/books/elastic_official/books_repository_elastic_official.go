@@ -3,6 +3,7 @@ package books_repository
 import (
 	"encoding/json"
 	"errors"
+	"github.com/google/uuid"
 	"net/http"
 	"pkg/service/pkg/data/response"
 	"pkg/service/pkg/models"
@@ -17,37 +18,42 @@ func NewElasticsearchBooksRepository(indexName string) books_repository.BooksRep
 	return &ElasticBooksRepository{Index: indexName}
 }
 
-func (e *ElasticBooksRepository) Create(book models.Book) error {
-	req, err := e.buildCreateRequest(e.Index, book)
+func (e *ElasticBooksRepository) Create(bookSource models.BookSource) (*models.Book, error) {
+	bookId := uuid.NewString()
+	req, err := e.buildCreateRequest(e.Index, bookId, bookSource)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	res, err := executeElasticRequest(req)
+	res, err := e.executeElasticRequest(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer res.Body.Close()
 
 	data := response.CreateBookElasticResponse{}
 	if err = json.NewDecoder(res.Body).Decode(&data); err != nil {
-		return err
+		return nil, err
 	}
 	if data.Error != nil {
-		return errors.New("error creating book")
+		return nil, errors.New("error creating book")
 	}
 
-	return nil
+	book := models.Book{Id: bookId}
+	if err = e.copyStruct(bookSource, &book); err != nil {
+		return nil, err
+	}
+	return &book, nil
 }
 
 func (e *ElasticBooksRepository) Get(filters models.BookFilters) (*[]models.Book, error) {
-	query := buildBooksFetchQuery(filters)
+	query := e.buildBooksFetchQuery(filters)
 	req, err := e.buildSearchRequest(query)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := executeElasticRequest(req)
+	res, err := e.executeElasticRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +82,7 @@ func (e *ElasticBooksRepository) Get(filters models.BookFilters) (*[]models.Book
 
 func (e *ElasticBooksRepository) GetById(bookId string) (*models.Book, error) {
 	req := e.buildGetRequest(bookId)
-	res, err := executeElasticRequest(req)
+	res, err := e.executeElasticRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +107,7 @@ func (e *ElasticBooksRepository) UpdateTitle(bookId string, title string) error 
 		return err
 	}
 
-	res, err := executeElasticRequest(req)
+	res, err := e.executeElasticRequest(req)
 	if err != nil {
 		return err
 	}
@@ -125,7 +131,7 @@ func (e *ElasticBooksRepository) UpdateTitle(bookId string, title string) error 
 func (e *ElasticBooksRepository) Delete(bookId string) error {
 	req := e.buildDeleteRequest(bookId)
 
-	res, err := executeElasticRequest(req)
+	res, err := e.executeElasticRequest(req)
 	if err != nil {
 		return err
 	}
@@ -146,13 +152,13 @@ func (e *ElasticBooksRepository) Delete(bookId string) error {
 }
 
 func (e *ElasticBooksRepository) GetInventory() (*models.StoreInventory, error) {
-	query := buildInventoryFetchQuery()
+	query := e.buildInventoryFetchQuery()
 	req, err := e.buildSearchRequest(query)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := executeElasticRequest(req)
+	res, err := e.executeElasticRequest(req)
 	if err != nil {
 		return nil, err
 	}

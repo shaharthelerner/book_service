@@ -3,7 +3,6 @@ package books_service
 import (
 	"errors"
 	"github.com/go-playground/validator/v10"
-	"github.com/google/uuid"
 	"pkg/service/pkg/data/request"
 	"pkg/service/pkg/data/response"
 	"pkg/service/pkg/models"
@@ -23,19 +22,19 @@ func NewBooksServiceImpl(booksRepository repository.BooksRepository, validate *v
 }
 
 func (bs *BooksServiceImpl) CreateBook(req request.CreateBookRequest) (*response.CreateBookResponse, error) {
-	book := models.Book{
-		Id:             uuid.NewString(),
+	bookSource := models.BookSource{
 		Title:          req.Title,
 		AuthorName:     req.AuthorName,
 		Price:          req.Price,
 		EbookAvailable: req.EbookAvailable,
 		PublishDate:    req.PublishDate,
 	}
-	if err := bs.BooksRepository.Create(book); err != nil {
+	book, err := bs.BooksRepository.Create(bookSource)
+	if err != nil {
 		return nil, err
 	}
 
-	return &response.CreateBookResponse{Book: book}, nil
+	return &response.CreateBookResponse{Book: *book}, nil
 }
 
 func (bs *BooksServiceImpl) GetBooks(req request.GetBooksRequest) (*response.GetBooksResponse, error) {
