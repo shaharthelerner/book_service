@@ -101,7 +101,7 @@ func (lc *LibraryController) UpdateBookTitle(ctx *gin.Context) {
 		return
 	}
 
-	err = lc.saveUserAction(req.Username, "PUT", "/books:id")
+	err = lc.saveUserAction(req.Username, "PUT", "/books/:id")
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
