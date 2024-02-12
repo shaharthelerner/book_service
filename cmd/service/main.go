@@ -23,11 +23,11 @@ func main() {
 
 	libraryController := controller.NewLibraryController(booksService, usersService)
 
-	router := router.NewRouter(libraryController)
+	libraryRouter := router.NewRouter(libraryController)
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", consts.ServerPort),
-		Handler: router,
+		Handler: libraryRouter,
 	}
 
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
