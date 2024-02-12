@@ -49,23 +49,10 @@ func (e *BooksRepositoryElastic) Get(filters models.BookFilters) (*[]models.Book
 		return nil, err
 	}
 
-	boolQuery := elastic.NewBoolQuery()
-	if filters.Title != "" {
-		termQuery := elastic.NewTermQuery("title.keyword", filters.Title)
-		boolQuery = boolQuery.Must(termQuery)
-	}
-	if filters.AuthorName != "" {
-		termQuery := elastic.NewTermQuery("author_name.keyword", filters.AuthorName)
-		boolQuery = boolQuery.Must(termQuery)
-	}
-	if filters.MinPrice != 0 && filters.MaxPrice != 0 {
-		rangeQuery := elastic.NewRangeQuery("price").Gte(filters.MinPrice).Lte(filters.MaxPrice)
-		boolQuery = boolQuery.Must(rangeQuery)
-	}
-
+	query := e.createBooksFetchQuery(filters)
 	searchResult, err := client.Search().
 		Index(e.Index).
-		Query(boolQuery).
+		Query(query).
 		Size(consts.BooksQuerySize).
 		Do(context.Background())
 
