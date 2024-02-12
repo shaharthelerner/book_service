@@ -11,15 +11,15 @@ import (
 	repository "pkg/service/pkg/repository/books"
 )
 
-type ElasticOlivereBooksRepository struct {
+type ElasticBooksRepository struct {
 	Index string
 }
 
-func NewElasticOliverBooksRepository(indexName string) repository.BooksRepository {
-	return &ElasticOlivereBooksRepository{Index: indexName}
+func NewElasticBooksRepository(indexName string) repository.BooksRepository {
+	return &ElasticBooksRepository{Index: indexName}
 }
 
-func (e *ElasticOlivereBooksRepository) Create(bookSource models.BookSource) (*models.Book, error) {
+func (e *ElasticBooksRepository) Create(bookSource models.BookSource) (*models.Book, error) {
 	client, err := e.getClient()
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func (e *ElasticOlivereBooksRepository) Create(bookSource models.BookSource) (*m
 	return &book, nil
 }
 
-func (e *ElasticOlivereBooksRepository) Get(filters models.BookFilters) (*[]models.Book, error) {
+func (e *ElasticBooksRepository) Get(filters models.BookFilters) (*[]models.Book, error) {
 	client, err := e.getClient()
 	if err != nil {
 		return nil, err
@@ -85,7 +85,7 @@ func (e *ElasticOlivereBooksRepository) Get(filters models.BookFilters) (*[]mode
 	return &books, nil
 }
 
-func (e *ElasticOlivereBooksRepository) GetById(bookId string) (*models.Book, error) {
+func (e *ElasticBooksRepository) GetById(bookId string) (*models.Book, error) {
 	client, err := e.getClient()
 	if err != nil {
 		return nil, err
@@ -109,7 +109,7 @@ func (e *ElasticOlivereBooksRepository) GetById(bookId string) (*models.Book, er
 	return &book, nil
 }
 
-func (e *ElasticOlivereBooksRepository) UpdateTitle(bookId string, title string) error {
+func (e *ElasticBooksRepository) UpdateTitle(bookId string, title string) error {
 	client, err := e.getClient()
 	if err != nil {
 		return err
@@ -128,7 +128,7 @@ func (e *ElasticOlivereBooksRepository) UpdateTitle(bookId string, title string)
 	return nil
 }
 
-func (e *ElasticOlivereBooksRepository) Delete(bookId string) error {
+func (e *ElasticBooksRepository) Delete(bookId string) error {
 	client, err := e.getClient()
 	if err != nil {
 		return err
@@ -152,7 +152,7 @@ func (e *ElasticOlivereBooksRepository) Delete(bookId string) error {
 	return nil
 }
 
-func (e *ElasticOlivereBooksRepository) GetInventory() (*models.StoreInventory, error) {
+func (e *ElasticBooksRepository) GetInventory() (*models.StoreInventory, error) {
 	client, err := e.getClient()
 	if err != nil {
 		return nil, err
@@ -185,7 +185,7 @@ func (e *ElasticOlivereBooksRepository) GetInventory() (*models.StoreInventory, 
 	}, nil
 }
 
-func (e *ElasticOlivereBooksRepository) copyStruct(src, dest interface{}) error {
+func (e *ElasticBooksRepository) copyStruct(src, dest interface{}) error {
 	srcJSON, err := json.Marshal(src)
 	if err != nil {
 		return err

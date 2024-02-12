@@ -6,8 +6,7 @@ import (
 	"net/http"
 	"pkg/service/pkg/consts"
 	"pkg/service/pkg/controller"
-	//books_repository "pkg/service/pkg/repository/books/elastic_official"
-	books_repository "pkg/service/pkg/repository/books/elastic_olivere"
+	books_repository "pkg/service/pkg/repository/books/elastic"
 	users_repository "pkg/service/pkg/repository/users/redis"
 	"pkg/service/pkg/router"
 	books_service "pkg/service/pkg/service/books"
@@ -16,8 +15,7 @@ import (
 
 func main() {
 	// Repositories
-	//booksRepository := books_repository.NewElasticsearchBooksRepository(consts.BooksIndexName)
-	booksRepository := books_repository.NewElasticOliverBooksRepository(consts.BooksIndexName)
+	booksRepository := books_repository.NewElasticBooksRepository(consts.BooksIndexName)
 	usersRepository := users_repository.NewRedisUsersRepository(consts.UserActivityActions)
 
 	// Services

@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-func (e *ElasticOlivereBooksRepository) getClient() (*elastic.Client, error) {
+func (e *ElasticBooksRepository) getClient() (*elastic.Client, error) {
 	url := os.Getenv("ELASTICSEARCH_URL")
 	if url == "" {
 		return nil, errors.New("cannot find elastic url")
