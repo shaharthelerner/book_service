@@ -20,14 +20,14 @@ func NewUsersRepositoryRedisImpl(activityActions int) users_repository.UsersRepo
 }
 
 func (r *UsersRepositoryRedis) SaveAction(ua models.UserAction) error {
-	client, err := NewRedisClient()
+	client, err := r.newRedisClient()
 	if err != nil {
 		log.Printf("error creating redis client: %s", err)
 		return err
 	}
 	defer client.Close()
 
-	key := createUsernameKey(ua.Username)
+	key := r.createUsernameKey(ua.Username)
 
 	// Push the action onto the left side of the list
 	if err = client.LPush(context.Background(), key, ua.Action).Err(); err != nil {
@@ -45,14 +45,14 @@ func (r *UsersRepositoryRedis) SaveAction(ua models.UserAction) error {
 }
 
 func (r *UsersRepositoryRedis) GetActivity(username string) (*models.UserActivity, error) {
-	client, err := NewRedisClient()
+	client, err := r.newRedisClient()
 	if err != nil {
 		log.Printf("error creating redis client: %s", err)
 		return nil, err
 	}
 	defer client.Close()
 
-	key := createUsernameKey(username)
+	key := r.createUsernameKey(username)
 	actions, err := client.LRange(context.Background(), key, 0, r.ActivityActions-1).Result()
 	if err != nil {
 		log.Printf("error getting activity for user %s: %s", username, err)

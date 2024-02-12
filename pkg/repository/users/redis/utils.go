@@ -8,7 +8,7 @@ import (
 	"pkg/service/pkg/consts"
 )
 
-func NewRedisClient() (*redis.Client, error) {
+func (r *UsersRepositoryRedis) newRedisClient() (*redis.Client, error) {
 	addr := os.Getenv("REDIS_ADDR")
 	if addr == "" {
 		addr = consts.DefaultRedisAddress
@@ -27,6 +27,6 @@ func NewRedisClient() (*redis.Client, error) {
 	return client, nil
 }
 
-func createUsernameKey(username string) string {
+func (r *UsersRepositoryRedis) createUsernameKey(username string) string {
 	return fmt.Sprintf(consts.UserActivitiesRedisKey, username)
 }

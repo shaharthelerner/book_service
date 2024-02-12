@@ -45,7 +45,7 @@ func (lc *LibraryController) CreateBook(ctx *gin.Context) {
 func (lc *LibraryController) GetBooks(ctx *gin.Context) {
 	req := request.GetBooksRequest{}
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"bind error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
