@@ -55,7 +55,7 @@ func (lc *LibraryController) GetBooks(ctx *gin.Context) {
 		return
 	}
 
-	err = saveUserAction(lc, req.Username, "GET", "/search")
+	err = saveUserAction(lc, req.Username, "GET", "/books")
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -78,7 +78,7 @@ func (lc *LibraryController) GetBookById(ctx *gin.Context) {
 		return
 	}
 
-	err = saveUserAction(lc, req.Username, "GET", "/books")
+	err = saveUserAction(lc, req.Username, "GET", "/books/:id")
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -101,13 +101,13 @@ func (lc *LibraryController) UpdateBookTitle(ctx *gin.Context) {
 		return
 	}
 
-	err = saveUserAction(lc, req.Username, "PUT", "/books")
+	err = saveUserAction(lc, req.Username, "PUT", "/books:id")
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.IndentedJSON(http.StatusOK, gin.H{"message": "book updated successfully"})
+	ctx.IndentedJSON(http.StatusOK, gin.H{"message": "book title updated successfully"})
 }
 
 func (lc *LibraryController) DeleteBook(ctx *gin.Context) {
@@ -124,7 +124,7 @@ func (lc *LibraryController) DeleteBook(ctx *gin.Context) {
 		return
 	}
 
-	err = saveUserAction(lc, req.Username, "DELETE", "/books")
+	err = saveUserAction(lc, req.Username, "DELETE", "/books/:id")
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
