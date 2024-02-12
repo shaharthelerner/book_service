@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/google/uuid"
 	"github.com/olivere/elastic/v7"
+	"log"
 	"pkg/service/pkg/consts"
 	"pkg/service/pkg/models"
 	repository "pkg/service/pkg/repository/books"
@@ -33,7 +34,8 @@ func (e *ElasticBooksRepository) Create(bookSource models.BookSource) (*models.B
 		Do(context.Background())
 
 	if err != nil {
-		return nil, err
+		log.Printf("error creating book: %s", err)
+		return nil, errors.New("error creating book")
 	}
 
 	book := models.Book{Id: bookId}
@@ -69,8 +71,10 @@ func (e *ElasticBooksRepository) Get(filters models.BookFilters) (*[]models.Book
 		Query(boolQuery).
 		Size(consts.BooksQuerySize).
 		Do(context.Background())
+
 	if err != nil {
-		return nil, err
+		log.Printf("error searching books: %s", err)
+		return nil, errors.New("error searching books")
 	}
 
 	books := make([]models.Book, 0)
@@ -93,10 +97,11 @@ func (e *ElasticBooksRepository) GetById(bookId string) (*models.Book, error) {
 
 	res, err := client.Get().Index(e.Index).Id(bookId).Do(context.Background())
 	if err != nil {
+		if elastic.IsNotFound(err) {
+			log.Printf("book not found: %s", err)
+			return nil, errors.New("book not found")
+		}
 		return nil, err
-	}
-	if !res.Found {
-		return nil, errors.New("book not found")
 	}
 
 	book := models.Book{}
@@ -122,7 +127,8 @@ func (e *ElasticBooksRepository) UpdateTitle(bookId string, title string) error 
 		Do(context.Background())
 
 	if err != nil {
-		return err
+		log.Printf("error updating book: %s", err)
+		return errors.New("error updating book")
 	}
 
 	return nil
@@ -134,18 +140,17 @@ func (e *ElasticBooksRepository) Delete(bookId string) error {
 		return err
 	}
 
-	deleteResult, err := client.Delete().
+	_, err = client.Delete().
 		Index(e.Index).
 		Id(bookId).
 		Do(context.Background())
 
 	if err != nil {
-		return err
-	}
-
-	if deleteResult.Result == "not_found" {
-		return errors.New("book not found")
-	} else if deleteResult.Result != "deleted" {
+		if elastic.IsNotFound(err) {
+			log.Printf("error deleteing book - book not found")
+			return errors.New("book not found")
+		}
+		log.Printf("error deleting book: %s", err)
 		return errors.New("error deleting book")
 	}
 
@@ -171,12 +176,13 @@ func (e *ElasticBooksRepository) GetInventory() (*models.StoreInventory, error) 
 		Do(context.Background())
 
 	if err != nil {
-		return nil, err
+		log.Printf("error getting books inventory: %s", err)
+		return nil, errors.New("error getting books inventory")
 	}
 
 	aggResult, found := searchResult.Aggregations.Cardinality(consts.UniqueAuthorsAggregationName)
 	if !found {
-		return nil, errors.New("failed tou count unique authors")
+		return nil, errors.New("failed to count unique authors")
 	}
 
 	return &models.StoreInventory{
