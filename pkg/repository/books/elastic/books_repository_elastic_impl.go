@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/google/uuid"
 	"github.com/olivere/elastic/v7"
 	"log"
 	"pkg/service/pkg/consts"
@@ -12,24 +11,22 @@ import (
 	repository "pkg/service/pkg/repository/books"
 )
 
-type ElasticBooksRepository struct {
+type BooksRepositoryElastic struct {
 	Index string
 }
 
-func NewElasticBooksRepository(indexName string) repository.BooksRepository {
-	return &ElasticBooksRepository{Index: indexName}
+func NewBooksRepositoryElasticImpl(indexName string) repository.BooksRepository {
+	return &BooksRepositoryElastic{Index: indexName}
 }
 
-func (e *ElasticBooksRepository) Create(bookSource models.BookSource) (*models.Book, error) {
+func (e *BooksRepositoryElastic) Create(bookSource models.BookSource) (*models.Book, error) {
 	client, err := e.getClient()
 	if err != nil {
 		return nil, err
 	}
 
-	bookId := uuid.NewString()
-	_, err = client.Index().
+	createResult, err := client.Index().
 		Index(e.Index).
-		Id(bookId).
 		BodyJson(bookSource).
 		Do(context.Background())
 
@@ -38,7 +35,7 @@ func (e *ElasticBooksRepository) Create(bookSource models.BookSource) (*models.B
 		return nil, errors.New("error creating book")
 	}
 
-	book := models.Book{Id: bookId}
+	book := models.Book{Id: createResult.Id}
 	if err = e.copyStruct(bookSource, &book); err != nil {
 		return nil, err
 	}
@@ -46,7 +43,7 @@ func (e *ElasticBooksRepository) Create(bookSource models.BookSource) (*models.B
 	return &book, nil
 }
 
-func (e *ElasticBooksRepository) Get(filters models.BookFilters) (*[]models.Book, error) {
+func (e *BooksRepositoryElastic) Get(filters models.BookFilters) (*[]models.Book, error) {
 	client, err := e.getClient()
 	if err != nil {
 		return nil, err
@@ -89,7 +86,7 @@ func (e *ElasticBooksRepository) Get(filters models.BookFilters) (*[]models.Book
 	return &books, nil
 }
 
-func (e *ElasticBooksRepository) GetById(bookId string) (*models.Book, error) {
+func (e *BooksRepositoryElastic) GetById(bookId string) (*models.Book, error) {
 	client, err := e.getClient()
 	if err != nil {
 		return nil, err
@@ -114,7 +111,7 @@ func (e *ElasticBooksRepository) GetById(bookId string) (*models.Book, error) {
 	return &book, nil
 }
 
-func (e *ElasticBooksRepository) UpdateTitle(bookId string, title string) error {
+func (e *BooksRepositoryElastic) UpdateTitle(bookId string, title string) error {
 	client, err := e.getClient()
 	if err != nil {
 		return err
@@ -134,7 +131,7 @@ func (e *ElasticBooksRepository) UpdateTitle(bookId string, title string) error 
 	return nil
 }
 
-func (e *ElasticBooksRepository) Delete(bookId string) error {
+func (e *BooksRepositoryElastic) Delete(bookId string) error {
 	client, err := e.getClient()
 	if err != nil {
 		return err
@@ -157,7 +154,7 @@ func (e *ElasticBooksRepository) Delete(bookId string) error {
 	return nil
 }
 
-func (e *ElasticBooksRepository) GetInventory() (*models.StoreInventory, error) {
+func (e *BooksRepositoryElastic) GetStoreInventory() (*models.StoreInventory, error) {
 	client, err := e.getClient()
 	if err != nil {
 		return nil, err
@@ -189,17 +186,4 @@ func (e *ElasticBooksRepository) GetInventory() (*models.StoreInventory, error) 
 		TotalBooks:    int(searchResult.TotalHits()),
 		UniqueAuthors: int(*aggResult.Value),
 	}, nil
-}
-
-func (e *ElasticBooksRepository) copyStruct(src, dest interface{}) error {
-	srcJSON, err := json.Marshal(src)
-	if err != nil {
-		return err
-	}
-
-	if err = json.Unmarshal(srcJSON, dest); err != nil {
-		return err
-	}
-
-	return nil
 }

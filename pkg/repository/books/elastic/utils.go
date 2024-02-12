@@ -1,13 +1,14 @@
 package books_repository
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/olivere/elastic/v7"
 	"os"
 )
 
-func (e *ElasticBooksRepository) getClient() (*elastic.Client, error) {
+func (e *BooksRepositoryElastic) getClient() (*elastic.Client, error) {
 	url := os.Getenv("ELASTICSEARCH_URL")
 	if url == "" {
 		return nil, errors.New("cannot find elastic url")
@@ -19,4 +20,17 @@ func (e *ElasticBooksRepository) getClient() (*elastic.Client, error) {
 	}
 
 	return client, err
+}
+
+func (e *BooksRepositoryElastic) copyStruct(src, dest interface{}) error {
+	srcJSON, err := json.Marshal(src)
+	if err != nil {
+		return err
+	}
+
+	if err = json.Unmarshal(srcJSON, dest); err != nil {
+		return err
+	}
+
+	return nil
 }

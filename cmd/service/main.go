@@ -14,8 +14,8 @@ import (
 )
 
 func main() {
-	booksRepository := books_repository.NewElasticBooksRepository(consts.BooksIndexName)
-	usersRepository := users_repository.NewRedisUsersRepository(consts.UserActivityActions)
+	booksRepository := books_repository.NewBooksRepositoryElasticImpl(consts.BooksIndexName)
+	usersRepository := users_repository.NewUsersRepositoryRedisImpl(consts.UserActivityActions)
 
 	booksService := books_service.NewBooksServiceImpl(booksRepository, validator.New())
 	usersService := users_service.NewUsersServiceImpl(usersRepository)

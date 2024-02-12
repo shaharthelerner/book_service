@@ -133,14 +133,14 @@ func (lc *LibraryController) DeleteBook(ctx *gin.Context) {
 	ctx.IndentedJSON(http.StatusOK, gin.H{"message": "book deleted successfully"})
 }
 
-func (lc *LibraryController) GetBooksInventory(ctx *gin.Context) {
-	req := request.GetBooksInventoryRequest{}
+func (lc *LibraryController) GetStoreInventory(ctx *gin.Context) {
+	req := request.GetStoreInventoryRequest{}
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	res, err := lc.booksService.GetBooksInventory()
+	res, err := lc.booksService.GetStoreInventory()
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

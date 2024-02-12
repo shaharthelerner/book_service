@@ -80,8 +80,8 @@ func (bs *BooksServiceImpl) DeleteBook(req request.DeleteBookRequest) error {
 	return bs.BooksRepository.Delete(req.Id)
 }
 
-func (bs *BooksServiceImpl) GetBooksInventory() (*response.GetBooksInventoryResponse, error) {
-	res, err := bs.BooksRepository.GetInventory()
+func (bs *BooksServiceImpl) GetStoreInventory() (*response.GetBooksInventoryResponse, error) {
+	res, err := bs.BooksRepository.GetStoreInventory()
 	if err != nil {
 		return nil, err
 	}

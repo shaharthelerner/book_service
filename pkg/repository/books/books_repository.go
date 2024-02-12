@@ -10,5 +10,5 @@ type BooksRepository interface {
 	GetById(bookId string) (*models.Book, error)
 	UpdateTitle(bookId string, title string) error
 	Delete(bookId string) error
-	GetInventory() (*models.StoreInventory, error)
+	GetStoreInventory() (*models.StoreInventory, error)
 }

@@ -1,5 +1,5 @@
 package request
 
-type GetBooksInventoryRequest struct {
+type GetStoreInventoryRequest struct {
 	Username string `form:"username" binding:"required"`
 }

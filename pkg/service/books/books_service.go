@@ -6,10 +6,10 @@ import (
 )
 
 type BooksService interface {
+	CreateBook(req request.CreateBookRequest) (*response.CreateBookResponse, error)
 	GetBooks(req request.GetBooksRequest) (*response.GetBooksResponse, error)
 	GetBookById(req request.GetBookByIdRequest) (*response.GetBookByIdResponse, error)
-	CreateBook(req request.CreateBookRequest) (*response.CreateBookResponse, error)
 	UpdateBookTitle(req request.UpdateBookTitleRequest) error
 	DeleteBook(req request.DeleteBookRequest) error
-	GetBooksInventory() (*response.GetBooksInventoryResponse, error)
+	GetStoreInventory() (*response.GetBooksInventoryResponse, error)
 }

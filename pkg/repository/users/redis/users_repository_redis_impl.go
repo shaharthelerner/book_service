@@ -2,22 +2,24 @@ package users_repository
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log"
 	"pkg/service/pkg/models"
 	"pkg/service/pkg/repository/users"
 )
 
-type RedisUsersRepository struct {
+type UsersRepositoryRedis struct {
 	ActivityActions int64
 }
 
-func NewRedisUsersRepository(activityActions int) users_repository.UsersRepository {
-	return &RedisUsersRepository{
+func NewUsersRepositoryRedisImpl(activityActions int) users_repository.UsersRepository {
+	return &UsersRepositoryRedis{
 		ActivityActions: int64(activityActions),
 	}
 }
 
-func (r *RedisUsersRepository) SaveAction(ua models.UserAction) error {
+func (r *UsersRepositoryRedis) SaveAction(ua models.UserAction) error {
 	client, err := NewRedisClient()
 	if err != nil {
 		return err
@@ -30,6 +32,7 @@ func (r *RedisUsersRepository) SaveAction(ua models.UserAction) error {
 	if err = client.LPush(context.Background(), key, ua.Action).Err(); err != nil {
 		return err
 	}
+
 	// Trim the list to keep only the last r.ActivityActions elements
 	if err = client.LTrim(context.Background(), key, 0, r.ActivityActions-1).Err(); err != nil {
 		return err
@@ -38,7 +41,7 @@ func (r *RedisUsersRepository) SaveAction(ua models.UserAction) error {
 	return nil
 }
 
-func (r *RedisUsersRepository) GetActivity(username string) (*models.UserActivity, error) {
+func (r *UsersRepositoryRedis) GetActivity(username string) (*models.UserActivity, error) {
 	client, err := NewRedisClient()
 	if err != nil {
 		return nil, err
@@ -48,8 +51,8 @@ func (r *RedisUsersRepository) GetActivity(username string) (*models.UserActivit
 	key := createUsernameKey(username)
 	actions, err := client.LRange(context.Background(), key, 0, r.ActivityActions-1).Result()
 	if err != nil {
-		log.Fatal(err)
-		return nil, err
+		log.Printf("error getting activity for user %s: %s", username, err)
+		return nil, errors.New(fmt.Sprintf("error getting activity for user %s", username))
 	}
 
 	return &models.UserActivity{Actions: actions}, nil
