@@ -13,7 +13,7 @@ func NewRouter(libraryController *controller.LibraryController) *gin.Engine {
 	router.PUT("/books/:id", libraryController.UpdateBookTitle)
 	router.DELETE("/books/:id", libraryController.DeleteBook)
 	router.GET("/store", libraryController.GetBooksInventory)
-	router.GET("/activity", libraryController.GetUserActivity)
+	router.GET("/activity/:username", libraryController.GetUserActivity)
 
 	return router
 }

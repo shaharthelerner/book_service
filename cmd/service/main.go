@@ -14,18 +14,14 @@ import (
 )
 
 func main() {
-	// Repositories
 	booksRepository := books_repository.NewElasticBooksRepository(consts.BooksIndexName)
 	usersRepository := users_repository.NewRedisUsersRepository(consts.UserActivityActions)
 
-	// Services
 	booksService := books_service.NewBooksServiceImpl(booksRepository, validator.New())
 	usersService := users_service.NewUsersServiceImpl(usersRepository)
 
-	// Controller
 	libraryController := controller.NewLibraryController(booksService, usersService)
 
-	// Router
 	routes := router.NewRouter(libraryController)
 
 	server := &http.Server{

@@ -114,7 +114,7 @@ func (lc *LibraryController) DeleteBook(ctx *gin.Context) {
 	bookId := ctx.Param("id")
 	req := request.DeleteBookRequest{Id: bookId}
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.JSON(400, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -156,9 +156,10 @@ func (lc *LibraryController) GetBooksInventory(ctx *gin.Context) {
 }
 
 func (lc *LibraryController) GetUserActivity(ctx *gin.Context) {
-	req := request.GetUserActivitiesRequest{}
+	username := ctx.Param("username")
+	req := request.GetUserActivitiesRequest{Username: username}
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.JSON(400, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -179,13 +180,3 @@ func saveUserAction(lc *LibraryController, username string, method string, route
 	}
 	return lc.usersService.SaveUserAction(ua)
 }
-
-// Remove
-//func (b *LibraryController getIdQueryParam(c *gin.Context) string {
-//	return c.Query("id")
-//}
-
-// Remove
-//func (b *LibraryController getUsernameQueryParam(c *gin.Context) string {
-//	return c.Query("username")
-//}
