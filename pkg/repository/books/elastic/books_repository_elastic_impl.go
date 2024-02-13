@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/olivere/elastic/v7"
 	"log"
 	"pkg/service/pkg/consts"
 	"pkg/service/pkg/models"
 	repository "pkg/service/pkg/repository/books"
+	"time"
 )
 
 type BooksRepositoryElastic struct {
@@ -28,6 +30,7 @@ func (e *BooksRepositoryElastic) Create(bookSource models.BookSource) (*models.B
 	createResult, err := client.Index().
 		Index(e.Index).
 		BodyJson(bookSource).
+		Timeout(fmt.Sprintf("%ds", consts.BooksRequestTimeout)).
 		Do(context.Background())
 
 	if err != nil {
@@ -54,6 +57,7 @@ func (e *BooksRepositoryElastic) Get(filters models.BookFilters) (*[]models.Book
 		Index(e.Index).
 		Query(query).
 		Size(consts.BooksQuerySize).
+		Timeout(fmt.Sprintf("%ds", consts.BooksRequestTimeout)).
 		Do(context.Background())
 
 	if err != nil {
@@ -79,7 +83,13 @@ func (e *BooksRepositoryElastic) GetById(bookId string) (*models.Book, error) {
 		return nil, err
 	}
 
-	res, err := client.Get().Index(e.Index).Id(bookId).Do(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), consts.BooksRequestTimeout*time.Second)
+	defer cancel()
+	res, err := client.Get().
+		Index(e.Index).
+		Id(bookId).
+		Do(ctx)
+
 	if err != nil {
 		if elastic.IsNotFound(err) {
 			log.Printf("book not found: %s", err)
@@ -108,6 +118,7 @@ func (e *BooksRepositoryElastic) UpdateTitle(bookId string, title string) error 
 		Index(e.Index).
 		Id(bookId).
 		Doc(map[string]interface{}{"title": title}).
+		Timeout(fmt.Sprintf("%ds", consts.BooksRequestTimeout)).
 		Do(context.Background())
 
 	if err != nil {
@@ -127,6 +138,7 @@ func (e *BooksRepositoryElastic) Delete(bookId string) error {
 	_, err = client.Delete().
 		Index(e.Index).
 		Id(bookId).
+		Timeout(fmt.Sprintf("%ds", consts.BooksRequestTimeout)).
 		Do(context.Background())
 
 	if err != nil {
@@ -157,6 +169,7 @@ func (e *BooksRepositoryElastic) GetStoreInventory() (*models.StoreInventory, er
 		SearchSource(searchSource).
 		Size(0).
 		TrackTotalHits(true).
+		Timeout(fmt.Sprintf("%ds", consts.BooksRequestTimeout)).
 		Do(context.Background())
 
 	if err != nil {
