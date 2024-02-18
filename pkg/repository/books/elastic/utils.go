@@ -1,14 +1,13 @@
-package books_repository
+package elastic
 
 import (
-	"encoding/json"
 	"errors"
 	"github.com/olivere/elastic/v7"
 	"os"
 	"pkg/service/pkg/models"
 )
 
-func (e *BooksRepositoryElastic) getClient() (*elastic.Client, error) {
+func getElasticClient() (*elastic.Client, error) {
 	url := os.Getenv("ELASTICSEARCH_URL")
 	if url == "" {
 		return nil, errors.New("cannot find elastic url in the environment")
@@ -21,7 +20,7 @@ func (e *BooksRepositoryElastic) getClient() (*elastic.Client, error) {
 	return client, err
 }
 
-func (e *BooksRepositoryElastic) createBooksFetchQuery(filters models.BookFilters) *elastic.BoolQuery {
+func createBooksFetchQuery(filters models.BookFilters) *elastic.BoolQuery {
 	boolQuery := elastic.NewBoolQuery()
 	if filters.Title != "" {
 		termQuery := elastic.NewTermQuery("title.keyword", filters.Title)
@@ -31,23 +30,16 @@ func (e *BooksRepositoryElastic) createBooksFetchQuery(filters models.BookFilter
 		termQuery := elastic.NewTermQuery("author_name.keyword", filters.AuthorName)
 		boolQuery = boolQuery.Must(termQuery)
 	}
-	if filters.MinPrice != 0 && filters.MaxPrice != 0 {
-		rangeQuery := elastic.NewRangeQuery("price").Gte(filters.MinPrice).Lte(filters.MaxPrice)
+	if filters.MinPrice > 0 || filters.MaxPrice > 0 {
+		rangeQuery := elastic.NewRangeQuery("price")
+		if filters.MinPrice > 0 {
+			rangeQuery = rangeQuery.Gte(filters.MinPrice)
+		}
+		if filters.MaxPrice > 0 {
+			rangeQuery = rangeQuery.Lte(filters.MaxPrice)
+		}
 		boolQuery = boolQuery.Must(rangeQuery)
 	}
 
 	return boolQuery
-}
-
-func (e *BooksRepositoryElastic) copyStruct(src, dest interface{}) error {
-	srcJSON, err := json.Marshal(src)
-	if err != nil {
-		return err
-	}
-
-	if err = json.Unmarshal(srcJSON, dest); err != nil {
-		return err
-	}
-
-	return nil
 }

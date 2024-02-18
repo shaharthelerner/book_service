@@ -1,4 +1,4 @@
-package users_repository
+package interfaces
 
 import "pkg/service/pkg/models"
 

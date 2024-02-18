@@ -1,34 +1,36 @@
-package users_repository
+package redis
 
 import (
 	"errors"
 	"fmt"
 	"log"
+	"pkg/service/pkg/interfaces"
 	"pkg/service/pkg/models"
-	"pkg/service/pkg/repository/users"
 )
 
+var _ interfaces.UsersRepository = &UsersRepositoryRedis{}
+
 type UsersRepositoryRedis struct {
-	ActivityActions int64
+	activityActions int64
 }
 
-func NewUsersRepositoryRedisImpl(activityActions int) users_repository.UsersRepository {
+func NewUsersRepositoryRedis(activityActions int) interfaces.UsersRepository {
 	return &UsersRepositoryRedis{
-		ActivityActions: int64(activityActions),
+		activityActions: int64(activityActions),
 	}
 }
 
 func (r *UsersRepositoryRedis) SaveAction(ua models.UserAction) error {
-	client, err := r.newRedisClient()
+	client, err := newRedisClient()
 	if err != nil {
 		log.Printf("error creating redis client: %s", err)
 		return err
 	}
 	defer client.Close()
 
-	key := r.createUsernameKey(ua.Username)
+	key := createUsernameKey(ua.Username)
 
-	err = r.pushValueToKey(client, key, ua.Action)
+	err = pushValueToKey(client, key, ua.Action)
 	if err != nil {
 		log.Printf("error saving action for user %s: %s", ua.Username, err)
 		return err
@@ -43,14 +45,14 @@ func (r *UsersRepositoryRedis) SaveAction(ua models.UserAction) error {
 }
 
 func (r *UsersRepositoryRedis) GetActivity(username string) (*models.UserActivity, error) {
-	client, err := r.newRedisClient()
+	client, err := newRedisClient()
 	if err != nil {
 		log.Printf("error creating redis client: %s", err)
 		return nil, err
 	}
 	defer client.Close()
 
-	key := r.createUsernameKey(username)
+	key := createUsernameKey(username)
 	actions, err := r.getRangeForKey(client, key)
 	if err != nil {
 		log.Printf("error getting activity for user %s: %s", username, err)

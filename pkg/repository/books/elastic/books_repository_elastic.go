@@ -1,4 +1,4 @@
-package books_repository
+package elastic
 
 import (
 	"context"
@@ -8,53 +8,52 @@ import (
 	"github.com/olivere/elastic/v7"
 	"log"
 	"pkg/service/pkg/consts"
+	"pkg/service/pkg/interfaces"
 	"pkg/service/pkg/models"
-	repository "pkg/service/pkg/repository/books"
 	"time"
 )
 
+var _ interfaces.BooksRepository = &BooksRepositoryElastic{}
+
 type BooksRepositoryElastic struct {
-	Index string
+	index string
 }
 
-func NewBooksRepositoryElasticImpl(indexName string) repository.BooksRepository {
-	return &BooksRepositoryElastic{Index: indexName}
+func NewBooksRepositoryElastic(indexName string) interfaces.BooksRepository {
+	return &BooksRepositoryElastic{index: indexName}
 }
 
-func (e *BooksRepositoryElastic) Create(bookSource models.BookSource) (*models.Book, error) {
-	client, err := e.getClient()
+func (e *BooksRepositoryElastic) Create(bookSource models.BookSource) (string, error) {
+	client, err := getElasticClient()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
+	defer client.Stop()
 
 	createResult, err := client.Index().
-		Index(e.Index).
+		Index(e.index).
 		BodyJson(bookSource).
 		Timeout(fmt.Sprintf("%ds", consts.BooksRequestTimeout)).
 		Do(context.Background())
 
 	if err != nil {
 		log.Printf("error creating book: %s", err)
-		return nil, errors.New("error creating book")
+		return "", errors.New("error creating book")
 	}
 
-	book := models.Book{Id: createResult.Id}
-	if err = e.copyStruct(bookSource, &book); err != nil {
-		return nil, err
-	}
-
-	return &book, nil
+	return createResult.Id, nil
 }
 
 func (e *BooksRepositoryElastic) Get(filters models.BookFilters) (*[]models.Book, error) {
-	client, err := e.getClient()
+	client, err := getElasticClient()
 	if err != nil {
 		return nil, err
 	}
+	defer client.Stop()
 
-	query := e.createBooksFetchQuery(filters)
+	query := createBooksFetchQuery(filters)
 	searchResult, err := client.Search().
-		Index(e.Index).
+		Index(e.index).
 		Query(query).
 		Size(consts.BooksQuerySize).
 		Timeout(fmt.Sprintf("%ds", consts.BooksRequestTimeout)).
@@ -78,15 +77,16 @@ func (e *BooksRepositoryElastic) Get(filters models.BookFilters) (*[]models.Book
 }
 
 func (e *BooksRepositoryElastic) GetById(bookId string) (*models.Book, error) {
-	client, err := e.getClient()
+	client, err := getElasticClient()
 	if err != nil {
 		return nil, err
 	}
+	defer client.Stop()
 
 	ctx, cancel := context.WithTimeout(context.Background(), consts.BooksRequestTimeout*time.Second)
 	defer cancel()
 	res, err := client.Get().
-		Index(e.Index).
+		Index(e.index).
 		Id(bookId).
 		Do(ctx)
 
@@ -109,13 +109,14 @@ func (e *BooksRepositoryElastic) GetById(bookId string) (*models.Book, error) {
 }
 
 func (e *BooksRepositoryElastic) UpdateTitle(bookId string, title string) error {
-	client, err := e.getClient()
+	client, err := getElasticClient()
 	if err != nil {
 		return err
 	}
+	defer client.Stop()
 
 	_, err = client.Update().
-		Index(e.Index).
+		Index(e.index).
 		Id(bookId).
 		Doc(map[string]interface{}{"title": title}).
 		Timeout(fmt.Sprintf("%ds", consts.BooksRequestTimeout)).
@@ -130,13 +131,14 @@ func (e *BooksRepositoryElastic) UpdateTitle(bookId string, title string) error 
 }
 
 func (e *BooksRepositoryElastic) Delete(bookId string) error {
-	client, err := e.getClient()
+	client, err := getElasticClient()
 	if err != nil {
 		return err
 	}
+	defer client.Stop()
 
 	_, err = client.Delete().
-		Index(e.Index).
+		Index(e.index).
 		Id(bookId).
 		Timeout(fmt.Sprintf("%ds", consts.BooksRequestTimeout)).
 		Do(context.Background())
@@ -154,10 +156,11 @@ func (e *BooksRepositoryElastic) Delete(bookId string) error {
 }
 
 func (e *BooksRepositoryElastic) GetStoreInventory() (*models.StoreInventory, error) {
-	client, err := e.getClient()
+	client, err := getElasticClient()
 	if err != nil {
 		return nil, err
 	}
+	defer client.Stop()
 
 	searchSource := elastic.NewSearchSource().Aggregation(
 		consts.UniqueAuthorsAggregationName,
@@ -165,7 +168,7 @@ func (e *BooksRepositoryElastic) GetStoreInventory() (*models.StoreInventory, er
 	)
 
 	searchResult, err := client.Search().
-		Index(e.Index).
+		Index(e.index).
 		SearchSource(searchSource).
 		Size(0).
 		TrackTotalHits(true).
@@ -177,9 +180,19 @@ func (e *BooksRepositoryElastic) GetStoreInventory() (*models.StoreInventory, er
 		return nil, errors.New("error getting books inventory")
 	}
 
+	if searchResult == nil {
+		log.Printf("error getting books inventory - search result is nil")
+		return nil, errors.New("error getting books inventory")
+	}
+
 	aggResult, found := searchResult.Aggregations.Cardinality(consts.UniqueAuthorsAggregationName)
 	if !found {
 		return nil, errors.New("failed to count unique authors")
+	}
+
+	if aggResult == nil {
+		log.Printf("error getting books inventory - aggResult is nil")
+		return nil, errors.New("error getting books inventory")
 	}
 
 	return &models.StoreInventory{

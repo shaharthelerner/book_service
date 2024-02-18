@@ -1,5 +1,5 @@
 package response
 
-type GetUserActivitiesResponse struct {
+type GetUserActivity struct {
 	Actions []string `json:"actions"`
 }

@@ -1,6 +1,6 @@
 package request
 
-type CreateUserActivityRequest struct {
+type CreateUserAction struct {
 	Username string
 	Method   string
 	Route    string
