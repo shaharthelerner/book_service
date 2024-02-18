@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/gin-gonic/gin"
 	"io"
+	"log"
 	"net/http"
 	"pkg/service/pkg/consts"
 	"pkg/service/pkg/interfaces"
@@ -44,9 +45,7 @@ func Middleware(usersHandler interfaces.UsersHandler) gin.HandlerFunc {
 		}
 
 		if err = usersHandler.SaveUserAction(userAction); err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			ctx.Abort()
-			return
+			log.Printf("failed to save user action: %s", err.Error())
 		}
 
 		ctx.Next()
